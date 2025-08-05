@@ -6,67 +6,78 @@
     <title>AI VA - TTS Integration Demo</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 850px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: 15px;
+            background: #fafafa;
+            line-height: 1.6;
         }
         .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: white;
+            padding: 25px 35px;
+            border-radius: 8px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e8e8e8;
         }
         h1 {
-            color: #333;
-            text-align: center;
+            color: #2c3e50;
+            text-align: left;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
         .tts-section {
-            margin-top: 40px;
-            padding: 25px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
         }
         .tts-section h2 {
-            color: #007bff;
-            margin-bottom: 15px;
+            color: #34495e;
+            margin-bottom: 12px;
+            font-weight: 500;
         }
         .form-group {
             margin-bottom: 20px;
         }
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 14px;
         }
         #ttsInput {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 15px;
+            font-family: inherit;
             resize: vertical;
+            transition: border-color 0.2s;
+        }
+        #ttsInput:focus {
+            outline: none;
+            border-color: #3498db;
         }
         #generateSpeechBtn {
-            background-color: #007bff;
+            background: #3498db;
             color: white;
-            padding: 12px 30px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 4px;
+            font-size: 15px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background 0.2s;
+            margin-top: 8px;
         }
         #generateSpeechBtn:hover {
-            background-color: #0056b3;
+            background: #2980b9;
         }
         #generateSpeechBtn:disabled {
-            background-color: #6c757d;
+            background: #95a5a6;
             cursor: not-allowed;
         }
         #ttsResult {
@@ -93,39 +104,229 @@
             border-radius: 5px;
             color: #721c24;
         }
+        
+        /* Audio Features Section */
+        .audio-features-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        /* TTS Section */
+        .tts-subsection {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .tts-subsection h2 {
+            color: #34495e;
+            margin-bottom: 12px;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+        
+        /* Voice Recording Section */
+        .echo-subsection {
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .echo-subsection h2 {
+            color: #34495e;
+            margin-bottom: 12px;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+        
+        .recording-controls {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+            align-items: center;
+        }
+        
+        .record-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .start-record {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .start-record:hover {
+            background: #219a52;
+        }
+        
+        .stop-record {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .stop-record:hover {
+            background: #c0392b;
+        }
+        
+        .record-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .recording-status {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
+        
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        .playback-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+        
+        .playback-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        #ttsResult {
+            margin-top: 15px;
+            padding: 15px;
+            background: #d5f4e6;
+            border: 1px solid #b8e6cc;
+            border-radius: 4px;
+        }
+        #ttsResult h3 {
+            color: #27ae60;
+            margin-top: 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        #audioInfo {
+            color: #2c3e50;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .error {
+            margin-top: 15px;
+            padding: 12px;
+            background: #ffeaa7;
+            border: 1px solid #fdcb6e;
+            border-radius: 4px;
+            color: #2d3436;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1> AI VA - Voice Agent</h1>
-        <p>Welcome to your AI Voice Assistant! This demo showcases our Text-to-Speech capabilities powered by Murf AI.</p>
+        <h1> Voice Generator</h1>
+        <!-- <p>Hey there! This is a little demo I put together to show off some cool voice features. You can turn text into speech or record your own voice - pretty neat stuff!</p> -->
         
-        <!-- Task 3: TTS Section -->
-        <div class="tts-section">
-            <h2> Text-to-Speech</h2>
-            <p>Enter text below to generate speech using our TTS API:</p>
-            
-            <div class="form-group">
-                <label for="ttsInput">Enter text to convert to speech:</label>
-                <textarea id="ttsInput" placeholder="Type your message here..." rows="3">Hello from Task 3! This is text-to-speech integration.</textarea>
+        <!-- Combined Audio Features Section -->
+        <div class="audio-features-section">
+            <!-- Text-to-Speech Subsection -->
+            <div class="tts-subsection">
+                <h2>💬 Text to Speech</h2>
+                <!-- <p>Type something and I'll make it talk! Works pretty well most of the time.</p> -->
+                
+                <div class="form-group">
+                    <label for="ttsInput">What should I say?</label>
+                    <textarea id="ttsInput" placeholder="Type anything you want to hear..." rows="3">Hey! This text-to-speech thing actually works.</textarea>
+                </div>
+                
+                <button id="generateSpeechBtn" onclick="generateSpeech()">Make it Talk!</button>
+                
+                <div id="ttsLoading" style="display: none;">
+                    <p>⏳ Working on it...</p>
+                </div>
+                
+                <div id="ttsResult" style="display: none;">
+                    <h3>Here's your audio!</h3>
+                    <audio id="audioPlayer" controls style="width: 100%; margin: 10px 0;">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <p id="audioInfo"></p>
+                </div>
+                
+                <div id="ttsError" style="display: none;" class="error">
+                    <p id="errorMessage"></p>
+                </div>
             </div>
             
-            <button id="generateSpeechBtn" onclick="generateSpeech()">Generate Speech</button>
-            
-            <div id="ttsLoading" style="display: none;">
-                <p>🔄 Generating speech, please wait...</p>
-            </div>
-            
-            <div id="ttsResult" style="display: none;">
-                <h3>Generated Audio:</h3>
-                <audio id="audioPlayer" controls style="width: 100%; margin: 10px 0;">
-                    Your browser does not support the audio element.
-                </audio>
-                <p id="audioInfo"></p>
-            </div>
-            
-            <div id="ttsError" style="display: none;" class="error">
-                <p id="errorMessage"></p>
+            <!-- Echo Bot Subsection -->
+            <div class="echo-subsection">
+                <h2> Voice Recorder</h2>
+                <!-- <p>Record yourself and hear it back - like a digital echo! Pretty cool, right?</p> -->
+                
+                <div class="recording-controls">
+                    <button id="startRecordBtn" class="record-btn start-record" onclick="startRecording()">
+                        🎤 Start Recording
+                    </button>
+                    <button id="stopRecordBtn" class="record-btn stop-record" onclick="stopRecording()" disabled>
+                        ⏹️ Stop
+                    </button>
+                </div>
+                
+                <div id="recordingStatus" class="recording-status" style="display: none;">
+                    <span class="recording-indicator"></span>
+                    Recording in progress...
+                </div>
+                
+                <div id="playbackSection" class="playback-section" style="display: none;">
+                    <h3>🔊 Here's what you said</h3>
+                    <audio id="recordedAudio" controls style="width: 100%; max-width: 400px;">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <div style="margin-top: 15px;">
+                        <button id="playRecordingBtn" class="record-btn start-record" onclick="playRecording()" style="font-size: 14px; padding: 8px 16px; min-width: auto;">
+                            ▶️ Play Recording
+                        </button>
+                        <!-- <button id="downloadRecordingBtn" class="record-btn" onclick="downloadRecording()" style="background-color: #6c757d; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            💾 Download
+                        </button> -->
+                    </div>
+                    <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                        Duration: <span id="recordingDuration">0:00</span> | 
+                        Size: <span id="recordingSize">0 KB</span>
+                    </p>
+                </div>
+                
+                <div id="echoError" style="display: none;" class="error">
+                    <p id="echoErrorMessage"></p>
+                </div>
             </div>
         </div>
     </div>
@@ -144,14 +345,14 @@
             const text = textInput.value.trim();
             
             if (!text) {
-                showError('Please enter some text to convert to speech.');
+                showError('You need to type something first!');
                 return;
             }
             
             // Reset UI
             hideAllResults();
             button.disabled = true;
-            button.textContent = 'Generating...';
+            button.textContent = 'Creating audio...';
             loading.style.display = 'block';
             
             try {
@@ -168,6 +369,7 @@
                 
                 if (response.ok && data.audio_url) {
                     // Success - play the audio
+                    console.log('TTS Audio URL received:', data.audio_url);
                     audioPlayer.src = data.audio_url;
                     audioInfo.textContent = `Text: "${data.text}" | Voice: ${data.voice} | Status: ${data.status}`;
                     result.style.display = 'block';
@@ -175,19 +377,23 @@
                     // Auto-play the audio
                     try {
                         await audioPlayer.play();
+                        console.log('TTS Audio playback started');
                     } catch (playError) {
-                        console.log('Auto-play blocked by browser, user can click play manually');
+                        console.log('Auto-play blocked by browser, user can click play manually:', playError);
+                        // Add a message to let user know they can manually play
+                        audioInfo.textContent += ' | Click the play button if it doesn\'t start automatically';
                     }
                 } else {
                     // Error response
-                    showError(data.error || 'Failed to generate speech');
+                    console.error('TTS API Error:', data);
+                    showError(data.error || 'Something went wrong with the speech generation');
                 }
             } catch (err) {
-                showError('Network error: ' + err.message);
+                showError('Connection problem: ' + err.message);
             } finally {
                 // Reset button
                 button.disabled = false;
-                button.textContent = 'Generate Speech';
+                button.textContent = 'Make it Talk!';
                 loading.style.display = 'none';
             }
         }
@@ -204,6 +410,189 @@
             document.getElementById('ttsError').style.display = 'none';
             document.getElementById('ttsLoading').style.display = 'none';
         }
+        
+        // Echo Bot functionality
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream;
+        let recordingStartTime;
+        
+        async function startRecording() {
+            try {
+                // Hide any previous errors
+                document.getElementById('echoError').style.display = 'none';
+                
+                console.log('Requesting microphone access...');
+                
+                // Request microphone access
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                console.log('Microphone access granted');
+                
+                // Initialize MediaRecorder with better options
+                let options = { mimeType: 'audio/webm; codecs=opus' };
+                
+                // Try different formats for better compatibility
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.warn('webm/opus not supported, trying webm');
+                    options = { mimeType: 'audio/webm' };
+                }
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.warn('webm not supported, trying mp4');
+                    options = { mimeType: 'audio/mp4' };
+                }
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.warn('mp4 not supported, using default');
+                    options = {};
+                }
+                
+                console.log('Using MediaRecorder with options:', options);
+                mediaRecorder = new MediaRecorder(stream, options);
+                recordedChunks = [];
+                
+                console.log('MediaRecorder initialized');
+                
+                // Set up event handlers
+                mediaRecorder.ondataavailable = function(event) {
+                    console.log('Data available:', event.data.size, 'bytes');
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = function() {
+                    console.log('Recording stopped, processing audio...');
+                    
+                    // Create blob from recorded chunks
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm; codecs=opus' });
+                    console.log('Audio blob created:', blob.size, 'bytes', 'Type:', blob.type);
+                    
+                    // Try different audio formats for better compatibility
+                    let audioUrl;
+                    try {
+                        audioUrl = URL.createObjectURL(blob);
+                        console.log('Audio URL created:', audioUrl);
+                    } catch (error) {
+                        console.error('Error creating audio URL:', error);
+                        showEchoError('Error creating audio URL: ' + error.message);
+                        return;
+                    }
+                    
+                    // Set up audio playback
+                    const audioElement = document.getElementById('recordedAudio');
+                    audioElement.src = audioUrl;
+                    
+                    // Add event listeners to debug audio loading
+                    audioElement.onloadstart = () => console.log('Audio loading started');
+                    audioElement.onloadeddata = () => console.log('Audio data loaded');
+                    audioElement.oncanplay = () => console.log('Audio can play');
+                    audioElement.onerror = (e) => {
+                        console.error('Audio error:', e);
+                        showEchoError('Audio playback error. Try using a different browser or check your audio settings.');
+                    };
+                    
+                    // Calculate and display duration and size
+                    const duration = Date.now() - recordingStartTime;
+                    const seconds = Math.floor(duration / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    document.getElementById('recordingDuration').textContent = 
+                        `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+                    
+                    // Display file size
+                    const sizeKB = Math.round(blob.size / 1024);
+                    document.getElementById('recordingSize').textContent = `${sizeKB} KB`;
+                    
+                    // Store blob globally for download function
+                    window.currentRecordingBlob = blob;
+                    
+                    // Show playback section
+                    document.getElementById('playbackSection').style.display = 'block';
+                    
+                    // Stop all tracks to release microphone
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Wait a moment then try to auto-play
+                    setTimeout(() => {
+                        audioElement.play().then(() => {
+                            console.log('Audio playback started automatically');
+                        }).catch(error => {
+                            console.warn('Auto-play blocked by browser:', error);
+                            showEchoError('Got it! Your recording is ready. Just hit the play button to hear it back.');
+                        });
+                    }, 100);
+                };
+                
+                // Start recording
+                recordingStartTime = Date.now();
+                mediaRecorder.start();
+                
+                console.log('Recording started');
+                
+                // Update UI
+                document.getElementById('startRecordBtn').disabled = true;
+                document.getElementById('stopRecordBtn').disabled = false;
+                document.getElementById('recordingStatus').style.display = 'block';
+                document.getElementById('playbackSection').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Recording error:', error);
+                showEchoError('Microphone access denied or not available: ' + error.message);
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            
+            // Update UI
+            document.getElementById('startRecordBtn').disabled = false;
+            document.getElementById('stopRecordBtn').disabled = true;
+            document.getElementById('recordingStatus').style.display = 'none';
+        }
+        
+        function showEchoError(message) {
+            const error = document.getElementById('echoError');
+            const errorMessage = document.getElementById('echoErrorMessage');
+            errorMessage.textContent = message;
+            error.style.display = 'block';
+        }
+        
+        function playRecording() {
+            const audioElement = document.getElementById('recordedAudio');
+            audioElement.currentTime = 0; // Reset to beginning
+            audioElement.play().then(() => {
+                console.log('Manual playback started');
+            }).catch(error => {
+                console.error('Manual playback failed:', error);
+                showEchoError('Playback failed: ' + error.message);
+            });
+        }
+        
+        function downloadRecording() {
+            if (window.currentRecordingBlob) {
+                const url = URL.createObjectURL(window.currentRecordingBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `recording_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                console.log('Recording download started');
+            } else {
+                showEchoError('No recording available for download');
+            }
+        }
+        
+        // Check browser support on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showEchoError('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Edge.');
+                document.getElementById('startRecordBtn').disabled = true;
+            }
+        });
     </script>
 </body>
 </html>
