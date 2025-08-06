@@ -1,11 +1,13 @@
 import os
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+import shutil
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
@@ -76,3 +78,113 @@ def generate_audio(request: TextRequest):
         raise HTTPException(status_code=500, detail=f"Audio URL not found in Murf API response: {data}")
 
     return {"audio_url": audio_url}
+
+# --- AUDIO UPLOAD ENDPOINT ---
+
+# Create uploads directory if it doesn't exist
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
+
+@app.post("/upload-audio")
+async def upload_audio(audio_file: UploadFile = File(...)):
+    """
+    Upload endpoint that receives audio files from the echo bot,
+    saves them temporarily, and returns file information.
+    """
+    try:
+        # Validate file type (basic check)
+        if not audio_file.content_type or not audio_file.content_type.startswith('audio/'):
+            raise HTTPException(status_code=400, detail="File must be an audio file")
+        
+        # Generate a unique filename
+        import uuid
+        file_extension = ".webm"  # Default for our recorder
+        if audio_file.filename:
+            file_extension = Path(audio_file.filename).suffix or ".webm"
+        
+        unique_filename = f"recording_{uuid.uuid4().hex[:8]}{file_extension}"
+        file_path = UPLOADS_DIR / unique_filename
+        
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(audio_file.file, buffer)
+        
+        # Get file size
+        file_size = file_path.stat().st_size
+        
+        return {
+            "status": "success",
+            "message": "Audio file uploaded successfully",
+            "filename": unique_filename,
+            "content_type": audio_file.content_type,
+            "size_bytes": file_size,
+            "size_kb": round(file_size / 1024, 2),
+            "upload_path": str(file_path)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# --- END OF UPLOAD ENDPOINT ---
+
+# --- FILE MANAGEMENT ENDPOINTS ---
+
+@app.get("/list-uploads")
+async def list_uploads():
+    """
+    List all uploaded audio files with their details
+    """
+    try:
+        files = []
+        for file_path in UPLOADS_DIR.iterdir():
+            if file_path.is_file():
+                stat = file_path.stat()
+                files.append({
+                    "filename": file_path.name,
+                    "size_bytes": stat.st_size,
+                    "size_kb": round(stat.st_size / 1024, 2),
+                    "upload_time": stat.st_mtime,
+                    "file_path": str(file_path)
+                })
+        
+        # Sort by upload time (newest first)
+        files.sort(key=lambda x: x["upload_time"], reverse=True)
+        
+        return {
+            "status": "success",
+            "total_files": len(files),
+            "files": files
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
+
+@app.get("/download/{filename}")
+async def download_file(filename: str):
+    """
+    Download a specific uploaded audio file
+    """
+    from fastapi.responses import FileResponse
+    
+    file_path = UPLOADS_DIR / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename=filename,
+        media_type='audio/webm'
+    )
+
+# --- END OF FILE MANAGEMENT ENDPOINTS ---
+
+# --- WEB INTERFACE FOR UPLOADED FILES ---
+
+@app.get("/files", response_class=HTMLResponse)
+async def view_files(request: Request):
+    """
+    Web interface to view and play uploaded audio files
+    """
+    return templates.TemplateResponse("files.html", {"request": request})
+
+# --- END OF WEB INTERFACE ---

@@ -10,18 +10,19 @@
             max-width: 850px;
             margin: 0 auto;
             padding: 15px;
-            background: #fafafa;
+            background: #1a1a1a;
             line-height: 1.6;
+            color: #e0e0e0;
         }
         .container {
-            background: white;
+            background: #2d2d2d;
             padding: 25px 35px;
             border-radius: 8px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
-            border: 1px solid #e8e8e8;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+            border: 1px solid #404040;
         }
         h1 {
-            color: #2c3e50;
+            color: #ffffff;
             text-align: left;
             font-weight: 600;
             margin-bottom: 8px;
@@ -29,12 +30,12 @@
         .tts-section {
             margin-top: 30px;
             padding: 20px;
-            background: #f8f9fa;
+            background: #3a3a3a;
             border-radius: 6px;
-            border: 1px solid #e9ecef;
+            border: 1px solid #555;
         }
         .tts-section h2 {
-            color: #34495e;
+            color: #ffffff;
             margin-bottom: 12px;
             font-weight: 500;
         }
@@ -45,25 +46,27 @@
             display: block;
             margin-bottom: 6px;
             font-weight: 500;
-            color: #2c3e50;
+            color: #e0e0e0;
             font-size: 14px;
         }
         #ttsInput {
             width: 100%;
             padding: 10px 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #555;
             border-radius: 4px;
             font-size: 15px;
             font-family: inherit;
             resize: vertical;
             transition: border-color 0.2s;
+            background: #404040;
+            color: #ffffff;
         }
         #ttsInput:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #007acc;
         }
         #generateSpeechBtn {
-            background: #3498db;
+            background: #007acc;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -74,10 +77,10 @@
             margin-top: 8px;
         }
         #generateSpeechBtn:hover {
-            background: #2980b9;
+            background: #005a99;
         }
         #generateSpeechBtn:disabled {
-            background: #95a5a6;
+            background: #666;
             cursor: not-allowed;
         }
         #ttsResult {
@@ -109,22 +112,22 @@
         .audio-features-section {
             margin-top: 25px;
             padding: 20px;
-            background: #f8f9fa;
+            background: #333;
             border-radius: 6px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #007acc;
         }
         
         /* TTS Section */
         .tts-subsection {
             margin-bottom: 30px;
             padding: 20px;
-            background: white;
+            background: #404040;
             border-radius: 6px;
-            border: 1px solid #ddd;
+            border: 1px solid #555;
         }
         
         .tts-subsection h2 {
-            color: #34495e;
+            color: #ffffff;
             margin-bottom: 12px;
             font-size: 1.4rem;
             font-weight: 500;
@@ -133,13 +136,13 @@
         /* Voice Recording Section */
         .echo-subsection {
             padding: 20px;
-            background: white;
+            background: #404040;
             border-radius: 6px;
-            border: 1px solid #ddd;
+            border: 1px solid #555;
         }
         
         .echo-subsection h2 {
-            color: #34495e;
+            color: #ffffff;
             margin-bottom: 12px;
             font-size: 1.4rem;
             font-weight: 500;
@@ -163,12 +166,12 @@
         }
         
         .start-record {
-            background: #27ae60;
+            background: #007acc;
             color: white;
         }
         
         .start-record:hover {
-            background: #219a52;
+            background: #005a99;
         }
         
         .stop-record {
@@ -181,7 +184,7 @@
         }
         
         .record-btn:disabled {
-            background: #bdc3c7;
+            background: #666;
             cursor: not-allowed;
         }
         
@@ -210,13 +213,13 @@
         .playback-section {
             margin-top: 15px;
             padding: 15px;
-            background: #f8f9fa;
+            background: #333;
             border-radius: 4px;
-            border-left: 3px solid #3498db;
+            border-left: 3px solid #007acc;
         }
         
         .playback-section h3 {
-            color: #2c3e50;
+            color: #ffffff;
             margin-bottom: 10px;
             font-size: 1.1rem;
             font-weight: 500;
@@ -225,8 +228,8 @@
         #ttsResult {
             margin-top: 15px;
             padding: 15px;
-            background: #d5f4e6;
-            border: 1px solid #b8e6cc;
+            background: #2a4d32;
+            border: 1px solid #27ae60;
             border-radius: 4px;
         }
         #ttsResult h3 {
@@ -236,17 +239,17 @@
             font-weight: 500;
         }
         #audioInfo {
-            color: #2c3e50;
+            color: #e0e0e0;
             font-size: 13px;
             margin-top: 8px;
         }
         .error {
             margin-top: 15px;
             padding: 12px;
-            background: #ffeaa7;
-            border: 1px solid #fdcb6e;
+            background: #4d2e1f;
+            border: 1px solid #f39c12;
             border-radius: 4px;
-            color: #2d3436;
+            color: #f39c12;
         }
     </style>
 </head>
@@ -310,13 +313,19 @@
                     <audio id="recordedAudio" controls style="width: 100%; max-width: 400px;">
                         Your browser does not support the audio element.
                     </audio>
+                    
+                    <!-- Upload Status Section -->
+                    <div id="uploadStatus" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;">
+                        <p id="uploadMessage" style="margin: 0; font-size: 14px;"></p>
+                    </div>
+                    
                     <div style="margin-top: 15px;">
                         <button id="playRecordingBtn" class="record-btn start-record" onclick="playRecording()" style="font-size: 14px; padding: 8px 16px; min-width: auto;">
                             ▶️ Play Recording
                         </button>
-                        <!-- <button id="downloadRecordingBtn" class="record-btn" onclick="downloadRecording()" style="background-color: #6c757d; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
-                            💾 Download
-                        </button> -->
+                        <button id="uploadBtn" class="record-btn" onclick="uploadRecording()" style="background: #007acc; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            ☁️ Upload to Server
+                        </button>
                     </div>
                     <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
                         Duration: <span id="recordingDuration">0:00</span> | 
@@ -516,9 +525,17 @@
                     setTimeout(() => {
                         audioElement.play().then(() => {
                             console.log('Audio playback started automatically');
+                            // Auto-upload after successful recording
+                            setTimeout(() => {
+                                uploadRecording();
+                            }, 1000); // Upload 1 second after playback starts
                         }).catch(error => {
                             console.warn('Auto-play blocked by browser:', error);
                             showEchoError('Got it! Your recording is ready. Just hit the play button to hear it back.');
+                            // Still try to upload even if playback fails
+                            setTimeout(() => {
+                                uploadRecording();
+                            }, 500);
                         });
                     }, 100);
                 };
@@ -568,6 +585,89 @@
                 console.error('Manual playback failed:', error);
                 showEchoError('Playback failed: ' + error.message);
             });
+        }
+        
+        async function uploadRecording() {
+            if (!window.currentRecordingBlob) {
+                showUploadStatus('No recording available to upload', 'error');
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            const originalText = uploadBtn.textContent;
+            
+            try {
+                // Update button state
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '⏳ Uploading...';
+                
+                // Show upload in progress
+                showUploadStatus('Uploading audio to server...', 'loading');
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('audio_file', window.currentRecordingBlob, 'recording.webm');
+                
+                // Upload to server
+                const response = await fetch('/upload-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    // Success
+                    console.log('Upload successful:', result);
+                    showUploadStatus(
+                        `✅ Upload successful! File: ${result.filename} (${result.size_kb} KB)`, 
+                        'success'
+                    );
+                } else {
+                    // Error response
+                    console.error('Upload error:', result);
+                    showUploadStatus(`❌ Upload failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showUploadStatus(`❌ Upload failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = originalText;
+            }
+        }
+        
+        function showUploadStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('uploadStatus');
+            const messageP = document.getElementById('uploadMessage');
+            
+            messageP.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            // Set colors based on status type
+            switch(type) {
+                case 'loading':
+                    statusDiv.style.background = '#333';
+                    statusDiv.style.border = '1px solid #007acc';
+                    statusDiv.style.color = '#e0e0e0';
+                    break;
+                case 'success':
+                    statusDiv.style.background = '#2a4d32';
+                    statusDiv.style.border = '1px solid #27ae60';
+                    statusDiv.style.color = '#27ae60';
+                    break;
+                case 'error':
+                    statusDiv.style.background = '#4d2e1f';
+                    statusDiv.style.border = '1px solid #f39c12';
+                    statusDiv.style.color = '#f39c12';
+                    break;
+                default:
+                    statusDiv.style.background = '#333';
+                    statusDiv.style.border = '1px solid #666';
+                    statusDiv.style.color = '#e0e0e0';
+            }
         }
         
         function downloadRecording() {

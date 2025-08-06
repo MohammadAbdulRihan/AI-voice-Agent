@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Voice Recordings</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #e8e8e8;
+            line-height: 1.5;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 25px;
+            border-radius: 6px;
+            border: 1px solid #3a3a3a;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 1.8rem;
+        }
+        .back-link {
+            color: #4a9eff;
+            text-decoration: none;
+            margin-bottom: 20px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .refresh-area {
+            margin-bottom: 20px;
+        }
+        .refresh-btn {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .refresh-btn:hover {
+            background: #357abd;
+        }
+        .info-bar {
+            background: #333;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #bbb;
+        }
+        .recordings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .recording {
+            background: #333;
+            border-radius: 5px;
+            padding: 15px;
+            border: 1px solid #444;
+        }
+        .recording:hover {
+            border-color: #4a9eff;
+        }
+        .recording-name {
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        .recording-info {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-play {
+            background: #28a745;
+            color: white;
+        }
+        .btn-play:hover {
+            background: #218838;
+        }
+        .btn-download {
+            background: #4a9eff;
+            color: white;
+        }
+        .btn-download:hover {
+            background: #357abd;
+        }
+        audio {
+            width: 100%;
+            height: 30px;
+            margin-top: 8px;
+        }
+        .loading {
+            text-align: center;
+            color: #4a9eff;
+            margin: 40px 0;
+        }
+        .empty {
+            text-align: center;
+            color: #777;
+            margin: 40px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Voice Recordings</h1>
+        
+        <a href="/" class="back-link">← Back to main page</a>
+        
+        <div class="refresh-area">
+            <button class="refresh-btn" onclick="loadFiles()">Refresh</button>
+        </div>
+        
+        <div id="info" class="info-bar" style="display: none;">
+            <span id="fileCount">0</span> recordings • <span id="totalSize">0 KB</span> total
+        </div>
+        
+        <div id="loading" class="loading">
+            Loading your recordings...
+        </div>
+        
+        <div id="recordings" class="recordings"></div>
+        
+        <div id="empty" class="empty" style="display: none;">
+            No recordings yet. Go record something!
+        </div>
+    </div>
+
+    <script>
+        let currentlyPlaying = null;
+        
+        async function loadFiles() {
+            const loading = document.getElementById('loading');
+            const recordings = document.getElementById('recordings');
+            const empty = document.getElementById('empty');
+            const info = document.getElementById('info');
+            
+            loading.style.display = 'block';
+            recordings.innerHTML = '';
+            empty.style.display = 'none';
+            info.style.display = 'none';
+            
+            try {
+                const response = await fetch('/list-uploads');
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.status === 'success' && data.files.length > 0) {
+                    showFiles(data.files);
+                    showStats(data.files);
+                    info.style.display = 'block';
+                } else {
+                    empty.style.display = 'block';
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                recordings.innerHTML = `<div style="color: #ff6b6b; text-align: center;">Couldn't load files: ${error.message}</div>`;
+            }
+        }
+        
+        function showFiles(files) {
+            const recordings = document.getElementById('recordings');
+            
+            files.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'recording';
+                
+                const date = new Date(file.upload_time * 1000);
+                const timeAgo = getTimeAgo(date);
+                
+                div.innerHTML = `
+                    <div class="recording-name">${file.filename.replace('recording_', '').replace('.webm', '')}.webm</div>
+                    <div class="recording-info">
+                        ${timeAgo} • ${file.size_kb} KB
+                    </div>
+                    <div class="controls">
+                        <button class="btn btn-play" onclick="playFile('${file.filename}')">
+                            Play
+                        </button>
+                        <a href="/download/${file.filename}" class="btn btn-download" download>
+                            Download
+                        </a>
+                    </div>
+                    <audio id="player-${file.filename}" controls style="width: 100%; margin-top: 8px;">
+                        <source src="/download/${file.filename}" type="audio/webm">
+                    </audio>
+                `;
+                
+                recordings.appendChild(div);
+            });
+        }
+        
+        function playFile(filename) {
+            // Stop current audio if playing
+            if (currentlyPlaying && !currentlyPlaying.paused) {
+                currentlyPlaying.pause();
+                currentlyPlaying.currentTime = 0;
+            }
+            
+            // Play new audio
+            currentlyPlaying = document.getElementById(`player-${filename}`);
+            currentlyPlaying.play().catch(error => {
+                console.log('Playback failed:', error);
+            });
+        }
+        
+        function showStats(files) {
+            const fileCount = files.length;
+            const totalSize = files.reduce((sum, file) => sum + file.size_kb, 0);
+            
+            document.getElementById('fileCount').textContent = fileCount;
+            document.getElementById('totalSize').textContent = `${totalSize.toFixed(1)} KB`;
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        }
+        
+        // Load files when page opens
+        document.addEventListener('DOMContentLoaded', loadFiles);
+    </script>
+</body>
+</html>
