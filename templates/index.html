@@ -294,6 +294,22 @@
                 <h2> Voice Recorder</h2>
                 <!-- <p>Record yourself and hear it back - like a digital echo! Pretty cool, right?</p> -->
                 
+                <!-- Session Management -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 6px; border-left: 3px solid #007acc;">
+                    <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 10px;">💬 Conversation Session</h4>
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <div>
+                            <strong>Session ID:</strong> <span id="sessionId" style="font-family: monospace; background: white; padding: 2px 6px; border-radius: 3px;">loading...</span>
+                        </div>
+                        <div>
+                            <strong>Messages:</strong> <span id="messageCount">0</span>
+                        </div>
+                        <button onclick="startNewSession()" style="background: #007acc; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            🔄 New Session
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="recording-controls">
                     <button id="startRecordBtn" class="record-btn start-record" onclick="startRecording()">
                         🎤 Start Recording
@@ -326,7 +342,73 @@
                         <button id="uploadBtn" class="record-btn" onclick="uploadRecording()" style="background: #007acc; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
                             ☁️ Upload to Server
                         </button>
+                        <button id="transcribeBtn" class="record-btn" onclick="transcribeRecording()" style="background: #28a745; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            📝 Transcribe
+                        </button>
+                        <button id="echoBtn" class="record-btn" onclick="echoWithTTS()" style="background: #e74c3c; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            🔄 Echo Bot v2
+                        </button>
+                        <button id="aiChatBtn" class="record-btn" onclick="voiceToVoiceAI()" style="background: #9b59b6; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            🤖 AI Chat
+                        </button>
+                        <button id="conversationBtn" class="record-btn" onclick="startConversation()" style="background: #2ecc71; font-size: 14px; padding: 8px 16px; min-width: auto; margin-left: 10px;">
+                            💬 Conversation
+                        </button>
                     </div>
+                    
+                    <!-- Transcription Results Section -->
+                    <div id="transcriptionSection" style="display: none; margin-top: 15px; padding: 15px; background: #f0f8ff; border-radius: 4px; border-left: 3px solid #28a745;">
+                        <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 10px;">📝 Transcription:</h4>
+                        <div id="transcriptionText" style="background: white; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0; color: #333; font-family: Georgia, serif; line-height: 1.5; min-height: 40px;"></div>
+                        <div id="transcriptionInfo" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+                    </div>
+                    
+                    <!-- Echo Bot v2 Results Section -->
+                    <div id="echoSection" style="display: none; margin-top: 15px; padding: 15px; background: #fff0f0; border-radius: 4px; border-left: 3px solid #e74c3c;">
+                        <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 10px;">🔄 Echo Bot v2 - Murf Voice Response:</h4>
+                        <div id="echoTranscription" style="background: white; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0; color: #333; font-family: Georgia, serif; line-height: 1.5; min-height: 40px; margin-bottom: 15px;"></div>
+                        <audio id="echoAudio" controls style="width: 100%; margin-top: 10px;" preload="metadata">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div id="echoInfo" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+                    </div>
+                    
+                    <!-- AI Chat (Voice-to-Voice) Results Section -->
+                    <div id="aiChatSection" style="display: none; margin-top: 15px; padding: 15px; background: #f8f0ff; border-radius: 4px; border-left: 3px solid #9b59b6;">
+                        <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 10px;">🤖 AI Chat - Voice Conversation:</h4>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #9b59b6;">👤 You said:</strong>
+                            <div id="aiUserQuery" style="background: white; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0; color: #333; font-family: Georgia, serif; line-height: 1.5; margin-top: 5px; min-height: 40px;"></div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #9b59b6;">🤖 AI responded:</strong>
+                            <div id="aiResponse" style="background: white; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0; color: #333; font-family: Georgia, serif; line-height: 1.5; margin-top: 5px; min-height: 40px;"></div>
+                        </div>
+                        <audio id="aiAudio" controls style="width: 100%; margin-top: 10px;" preload="metadata">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div id="aiInfo" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+                    </div>
+                    
+                    <!-- Conversation Agent Results Section -->
+                    <div id="conversationSection" style="display: none; margin-top: 15px; padding: 15px; background: #f0fff0; border-radius: 4px; border-left: 3px solid #2ecc71;">
+                        <h4 style="color: #2c3e50; margin-top: 0; margin-bottom: 10px;">💬 Conversation History:</h4>
+                        <div id="conversationHistory" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;"></div>
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #2ecc71;">🤖 Latest Response:</strong>
+                            <div id="latestResponse" style="background: white; padding: 12px; border-radius: 4px; border: 1px solid #e0e0e0; color: #333; font-family: Georgia, serif; line-height: 1.5; margin-top: 5px; min-height: 40px;"></div>
+                        </div>
+                        <audio id="conversationAudio" controls style="width: 100%; margin-top: 10px;" preload="metadata">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div id="conversationInfo" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+                        <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-radius: 4px;">
+                            <p style="margin: 0; font-size: 12px; color: #666;">
+                                💡 <strong>Conversation Mode:</strong> The AI remembers our chat history. After each response finishes playing, click "🎤 Start Recording" to continue the conversation!
+                            </p>
+                        </div>
+                    </div>
+                    
                     <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
                         Duration: <span id="recordingDuration">0:00</span> | 
                         Size: <span id="recordingSize">0 KB</span>
@@ -341,6 +423,59 @@
     </div>
     <script src="/static/script.js"></script>
     <script>
+        // Session Management
+        let currentSessionId = null;
+        let conversationMode = false;
+        let autoRecordAfterResponse = false;
+        
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        function initializeSession() {
+            // Check URL params for session ID
+            const urlParams = new URLSearchParams(window.location.search);
+            currentSessionId = urlParams.get('session_id') || generateSessionId();
+            
+            // Update URL with session ID
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('session_id', currentSessionId);
+            window.history.replaceState({}, '', newUrl);
+            
+            // Update UI
+            document.getElementById('sessionId').textContent = currentSessionId;
+            updateMessageCount();
+        }
+        
+        function startNewSession() {
+            currentSessionId = generateSessionId();
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('session_id', currentSessionId);
+            window.history.replaceState({}, '', newUrl);
+            
+            document.getElementById('sessionId').textContent = currentSessionId;
+            document.getElementById('messageCount').textContent = '0';
+            
+            // Hide conversation section
+            document.getElementById('conversationSection').style.display = 'none';
+            conversationMode = false;
+            
+            showUploadStatus('✅ New conversation session started!', 'success');
+        }
+        
+        async function updateMessageCount() {
+            try {
+                const response = await fetch(`/agent/history/${currentSessionId}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('messageCount').textContent = result.message_count;
+                }
+            } catch (error) {
+                console.warn('Could not fetch message count:', error);
+            }
+        }
+        
         async function generateSpeech() {
             const textInput = document.getElementById('ttsInput');
             const button = document.getElementById('generateSpeechBtn');
@@ -525,17 +660,9 @@
                     setTimeout(() => {
                         audioElement.play().then(() => {
                             console.log('Audio playback started automatically');
-                            // Auto-upload after successful recording
-                            setTimeout(() => {
-                                uploadRecording();
-                            }, 1000); // Upload 1 second after playback starts
                         }).catch(error => {
                             console.warn('Auto-play blocked by browser:', error);
-                            showEchoError('Got it! Your recording is ready. Just hit the play button to hear it back.');
-                            // Still try to upload even if playback fails
-                            setTimeout(() => {
-                                uploadRecording();
-                            }, 500);
+                            showEchoError('Got it! Your recording is ready. You can play, upload, or transcribe it.');
                         });
                     }, 100);
                 };
@@ -639,6 +766,84 @@
             }
         }
         
+        async function transcribeRecording() {
+            if (!window.currentRecordingBlob) {
+                showUploadStatus('No recording available to transcribe', 'error');
+                return;
+            }
+            
+            const transcribeBtn = document.getElementById('transcribeBtn');
+            const originalText = transcribeBtn.textContent;
+            
+            try {
+                // Update button state
+                transcribeBtn.disabled = true;
+                transcribeBtn.textContent = '🔄 Transcribing...';
+                
+                // Show transcription in progress
+                showUploadStatus('Transcribing audio...', 'loading');
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('audio_file', window.currentRecordingBlob, 'recording.webm');
+                
+                // Send to transcription endpoint
+                const response = await fetch('/transcribe/file', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    // Success - show transcription
+                    console.log('Transcription successful:', result);
+                    showTranscription(result);
+                    showUploadStatus('✅ Transcription completed!', 'success');
+                } else {
+                    // Error response
+                    console.error('Transcription error:', result);
+                    showUploadStatus(`❌ Transcription failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Transcription error:', error);
+                showUploadStatus(`❌ Transcription failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button
+                transcribeBtn.disabled = false;
+                transcribeBtn.textContent = originalText;
+            }
+        }
+        
+        function showTranscription(result) {
+            const transcriptionSection = document.getElementById('transcriptionSection');
+            const transcriptionText = document.getElementById('transcriptionText');
+            const transcriptionInfo = document.getElementById('transcriptionInfo');
+            
+            // Show the transcription section
+            transcriptionSection.style.display = 'block';
+            
+            // Display the transcription text
+            if (result.transcription) {
+                transcriptionText.textContent = result.transcription;
+            } else {
+                transcriptionText.textContent = 'No speech detected in the audio.';
+                transcriptionText.style.fontStyle = 'italic';
+                transcriptionText.style.color = '#666';
+            }
+            
+            // Display additional info
+            let infoText = '';
+            if (result.audio_duration) {
+                infoText += `Audio Duration: ${result.audio_duration}ms `;
+            }
+            if (result.confidence) {
+                infoText += `| Confidence: ${(result.confidence * 100).toFixed(1)}%`;
+            }
+            transcriptionInfo.textContent = infoText;
+        }
+        
         function showUploadStatus(message, type = 'info') {
             const statusDiv = document.getElementById('uploadStatus');
             const messageP = document.getElementById('uploadMessage');
@@ -646,27 +851,27 @@
             messageP.textContent = message;
             statusDiv.style.display = 'block';
             
-            // Set colors based on status type
+            // Set colors based on status type (updated for white theme)
             switch(type) {
                 case 'loading':
-                    statusDiv.style.background = '#333';
+                    statusDiv.style.background = '#e3f2fd';
                     statusDiv.style.border = '1px solid #007acc';
-                    statusDiv.style.color = '#e0e0e0';
+                    statusDiv.style.color = '#1976d2';
                     break;
                 case 'success':
-                    statusDiv.style.background = '#2a4d32';
-                    statusDiv.style.border = '1px solid #27ae60';
-                    statusDiv.style.color = '#27ae60';
+                    statusDiv.style.background = '#e8f5e8';
+                    statusDiv.style.border = '1px solid #4caf50';
+                    statusDiv.style.color = '#2e7d32';
                     break;
                 case 'error':
-                    statusDiv.style.background = '#4d2e1f';
-                    statusDiv.style.border = '1px solid #f39c12';
-                    statusDiv.style.color = '#f39c12';
+                    statusDiv.style.background = '#ffebee';
+                    statusDiv.style.border = '1px solid #f44336';
+                    statusDiv.style.color = '#c62828';
                     break;
                 default:
-                    statusDiv.style.background = '#333';
-                    statusDiv.style.border = '1px solid #666';
-                    statusDiv.style.color = '#e0e0e0';
+                    statusDiv.style.background = '#f5f5f5';
+                    statusDiv.style.border = '1px solid #ccc';
+                    statusDiv.style.color = '#666';
             }
         }
         
@@ -686,8 +891,279 @@
             }
         }
         
+        // Echo Bot v2 - Transcribe and respond with Murf TTS
+        async function echoWithTTS() {
+            if (!window.currentRecordingBlob) {
+                showUploadStatus('No recording available for Echo Bot', 'error');
+                return;
+            }
+            
+            const echoBtn = document.getElementById('echoBtn');
+            const originalText = echoBtn.textContent;
+            
+            try {
+                // Update button state
+                echoBtn.disabled = true;
+                echoBtn.textContent = '🔄 Processing...';
+                
+                // Show processing status
+                showUploadStatus('Echo Bot v2: Transcribing and generating voice response...', 'loading');
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('audio_file', window.currentRecordingBlob, 'recording.webm');
+                
+                // Send to echo endpoint
+                const response = await fetch('/tts/echo', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.transcription && result.audio_url) {
+                    // Success - show echo response
+                    console.log('Echo Bot v2 successful:', result);
+                    showEchoResponse(result);
+                    showUploadStatus('✅ Echo Bot v2 completed! Playing Murf voice response...', 'success');
+                } else {
+                    // Error response
+                    console.error('Echo Bot v2 error:', result);
+                    showUploadStatus(`❌ Echo Bot v2 failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Echo Bot v2 error:', error);
+                showUploadStatus(`❌ Echo Bot v2 failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button
+                echoBtn.disabled = false;
+                echoBtn.textContent = originalText;
+            }
+        }
+        
+        function showEchoResponse(result) {
+            const echoSection = document.getElementById('echoSection');
+            const echoTranscription = document.getElementById('echoTranscription');
+            const echoAudio = document.getElementById('echoAudio');
+            const echoInfo = document.getElementById('echoInfo');
+            
+            // Show the echo section
+            echoSection.style.display = 'block';
+            
+            // Display the transcription
+            echoTranscription.textContent = `"${result.transcription}"`;
+            
+            // Set up audio playback
+            echoAudio.src = result.audio_url;
+            echoAudio.load(); // Important: reload the audio element
+            
+            // Auto-play the response
+            echoAudio.play().then(() => {
+                console.log('Echo Bot v2 audio playing automatically');
+            }).catch(error => {
+                console.warn('Auto-play prevented, user can play manually:', error);
+            });
+            
+            // Display info
+            echoInfo.textContent = `Voice: ${result.voice_id || 'en-US-marcus'} | Generated by Murf TTS`;
+        }
+        
+        // Voice-to-Voice AI Chat - Complete conversation flow
+        async function voiceToVoiceAI() {
+            if (!window.currentRecordingBlob) {
+                showUploadStatus('No recording available for AI Chat', 'error');
+                return;
+            }
+            
+            const aiChatBtn = document.getElementById('aiChatBtn');
+            const originalText = aiChatBtn.textContent;
+            
+            try {
+                // Update button state
+                aiChatBtn.disabled = true;
+                aiChatBtn.textContent = '🤖 Processing...';
+                
+                // Show processing status
+                showUploadStatus('🤖 AI Chat: Transcribing → Thinking → Generating Voice Response...', 'loading');
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('audio_file', window.currentRecordingBlob, 'recording.webm');
+                
+                // Send to voice-to-voice LLM endpoint
+                const response = await fetch('/llm/query', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.user_query && result.llm_response && result.audio_url) {
+                    // Success - show AI conversation
+                    console.log('Voice-to-Voice AI successful:', result);
+                    showAIResponse(result);
+                    showUploadStatus('✅ AI Chat completed! Playing AI voice response...', 'success');
+                } else {
+                    // Error response
+                    console.error('Voice-to-Voice AI error:', result);
+                    showUploadStatus(`❌ AI Chat failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Voice-to-Voice AI error:', error);
+                showUploadStatus(`❌ AI Chat failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button
+                aiChatBtn.disabled = false;
+                aiChatBtn.textContent = originalText;
+            }
+        }
+        
+        function showAIResponse(result) {
+            const aiChatSection = document.getElementById('aiChatSection');
+            const aiUserQuery = document.getElementById('aiUserQuery');
+            const aiResponse = document.getElementById('aiResponse');
+            const aiAudio = document.getElementById('aiAudio');
+            const aiInfo = document.getElementById('aiInfo');
+            
+            // Show the AI chat section
+            aiChatSection.style.display = 'block';
+            
+            // Display the conversation
+            aiUserQuery.textContent = `"${result.user_query}"`;
+            aiResponse.textContent = result.llm_response;
+            
+            // Set up audio playback
+            aiAudio.src = result.audio_url;
+            aiAudio.load(); // Important: reload the audio element
+            
+            // Auto-play the AI response
+            aiAudio.play().then(() => {
+                console.log('AI voice response playing automatically');
+            }).catch(error => {
+                console.warn('Auto-play prevented, user can play manually:', error);
+            });
+            
+            // Display info
+            aiInfo.textContent = `AI Model: ${result.model || 'gemini-1.5-flash'} | Voice: ${result.voice_id || 'en-US-marcus'} | Powered by Gemini + Murf`;
+        }
+        
+        // Conversational Agent with Chat History
+        async function startConversation() {
+            if (!window.currentRecordingBlob) {
+                showUploadStatus('No recording available for Conversation', 'error');
+                return;
+            }
+            
+            conversationMode = true;
+            const conversationBtn = document.getElementById('conversationBtn');
+            const originalText = conversationBtn.textContent;
+            
+            try {
+                // Update button state
+                conversationBtn.disabled = true;
+                conversationBtn.textContent = '💬 Processing...';
+                
+                // Show processing status
+                showUploadStatus('💬 Conversation: Remembering history → Transcribing → Thinking → Generating Response...', 'loading');
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('audio_file', window.currentRecordingBlob, 'recording.webm');
+                
+                // Send to conversational agent endpoint
+                const response = await fetch(`/agent/chat/${currentSessionId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.user_message && result.assistant_message && result.audio_url) {
+                    // Success - show conversation
+                    console.log('Conversational Agent successful:', result);
+                    await showConversationResponse(result);
+                    showUploadStatus('✅ Conversation completed! Playing AI response...', 'success');
+                    updateMessageCount();
+                } else {
+                    // Error response
+                    console.error('Conversational Agent error:', result);
+                    showUploadStatus(`❌ Conversation failed: ${result.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Conversational Agent error:', error);
+                showUploadStatus(`❌ Conversation failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button
+                conversationBtn.disabled = false;
+                conversationBtn.textContent = originalText;
+            }
+        }
+        
+        async function showConversationResponse(result) {
+            const conversationSection = document.getElementById('conversationSection');
+            const conversationHistory = document.getElementById('conversationHistory');
+            const latestResponse = document.getElementById('latestResponse');
+            const conversationAudio = document.getElementById('conversationAudio');
+            const conversationInfo = document.getElementById('conversationInfo');
+            
+            // Show the conversation section
+            conversationSection.style.display = 'block';
+            
+            // Add current exchange to history display
+            const exchangeDiv = document.createElement('div');
+            exchangeDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;';
+            exchangeDiv.innerHTML = `
+                <div style="margin-bottom: 8px;">
+                    <strong style="color: #2ecc71;">👤 You:</strong> <span style="color: #333;">"${result.user_message}"</span>
+                </div>
+                <div>
+                    <strong style="color: #2ecc71;">🤖 AI:</strong> <span style="color: #333;">${result.assistant_message}</span>
+                </div>
+            `;
+            conversationHistory.appendChild(exchangeDiv);
+            
+            // Scroll to bottom of history
+            conversationHistory.scrollTop = conversationHistory.scrollHeight;
+            
+            // Display latest response
+            latestResponse.textContent = result.assistant_message;
+            
+            // Set up audio playback
+            conversationAudio.src = result.audio_url;
+            conversationAudio.load();
+            
+            // Auto-play the response and set up auto-recording
+            try {
+                await conversationAudio.play();
+                console.log('Conversation response playing');
+                
+                // Set up auto-recording after audio finishes
+                conversationAudio.addEventListener('ended', function() {
+                    setTimeout(() => {
+                        if (conversationMode) {
+                            showUploadStatus('🎤 Ready for your next message! Click "🎤 Start Recording" to continue...', 'info');
+                            // Optionally auto-start recording:
+                            // startRecording();
+                        }
+                    }, 1000);
+                }, { once: true });
+                
+            } catch (error) {
+                console.warn('Auto-play prevented, user can play manually:', error);
+            }
+            
+            // Display info
+            conversationInfo.textContent = `Session: ${result.session_id} | Messages: ${result.conversation_length} | Model: ${result.model} | Voice: ${result.voice_id}`;
+        }
+        
         // Check browser support on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize session management
+            initializeSession();
+            
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 showEchoError('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Edge.');
                 document.getElementById('startRecordBtn').disabled = true;
