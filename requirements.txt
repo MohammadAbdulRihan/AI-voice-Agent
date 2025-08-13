@@ -6,3 +6,75 @@ uvicorn==0.24.0
 python-multipart==0.0.6
 assemblyai==0.21.0
 google-generativeai==0.3.2
+
+# =============================================================================
+# AI VOICE AGENT - REQUIREMENTS BY DAY
+# =============================================================================
+
+# DAY 1: Basic FastAPI Setup
+# - Started with FastAPI server foundation
+# - Added Uvicorn for ASGI server
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# DAY 2: Text-to-Speech Integration  
+# - Added HTTP requests for Murf TTS API calls
+# - Environment variables for API key management
+requests==2.31.0
+python-dotenv==1.0.0
+
+# DAY 3: Frontend Integration
+# - HTML templates and static file serving
+# (No new dependencies - used FastAPI built-in templating)
+
+# DAY 4: Voice Recording (Echo Bot v1)
+# - Browser-based audio recording with MediaRecorder API
+# (No new dependencies - used web APIs)
+
+# DAY 5: File Upload to Server
+# - Audio file upload and server-side storage
+# - Multipart form data handling for file uploads
+python-multipart==0.0.6
+
+# DAY 6: Speech-to-Text Transcription
+# - AssemblyAI integration for audio transcription
+# - High-accuracy speech recognition
+assemblyai==0.21.0
+
+# DAY 7: Echo Bot v2 (Voice Processing Pipeline)
+# - Combined STT + TTS for voice echo functionality
+# (Used existing AssemblyAI + Murf APIs)
+
+# DAY 8: LLM Integration
+# - Google Gemini API for intelligent responses
+# - AI-powered conversation capability
+google-generativeai==0.3.2
+
+# DAY 9: Voice-to-Voice AI Chat
+# - Complete voice conversation pipeline
+# - Audio input → STT → LLM → TTS → Audio output
+# (Combined all existing APIs)
+
+# DAY 10: Chat History & Conversational Memory
+# - Session-based conversation storage
+# - Context-aware AI responses with memory
+# (Used in-memory storage - no new dependencies)
+
+# LEGACY/UNUSED DEPENDENCIES
+# - Flask was initially considered but FastAPI was chosen instead
+flask==3.0.0
+
+# =============================================================================
+# TOTAL TECH STACK SUMMARY:
+# - FastAPI: Modern Python web framework
+# - Uvicorn: Lightning-fast ASGI server  
+# - Requests: HTTP client for API calls
+# - Python-dotenv: Environment variable management
+# - Python-multipart: File upload handling
+# - AssemblyAI: Speech-to-text transcription
+# - Google Generative AI: LLM responses (Gemini)
+# - Murf TTS: Professional voice generation
+# =============================================================================
+
+# INSTALLATION COMMAND:
+# pip install -r requirements.txt
