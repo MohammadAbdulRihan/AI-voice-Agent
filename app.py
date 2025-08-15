@@ -1,908 +1,543 @@
-# =============================================================================
-# AI VOICE AGENT - BACKEND SERVER (app.py)
-# =============================================================================
-# 
-# DAY 1: Basic FastAPI Setup
-# DAY 2: Text-to-Speech Integration (Murf TTS API)
-# DAY 3: Frontend Integration (HTML Templates & Static Files)
-# DAY 4: Voice Recording (Echo Bot v1 - Browser MediaRecorder)
-# DAY 5: File Upload to Server (Audio Storage & Management)
-# DAY 6: Speech-to-Text Transcription (AssemblyAI Integration)
-# DAY 7: Echo Bot v2 (Voice Processing Pipeline)
-# DAY 8: LLM Integration (Google Gemini API)
-# DAY 9: Voice-to-Voice AI Chat (Complete Audio Pipeline)
-# DAY 10: Chat History & Conversational Memory (Session Management)
-#
-# =============================================================================
+"""
+AI Voice Agent - Refactored FastAPI Application
 
-# DAY 1: Basic Imports for FastAPI Server
+Day 14: Code refactoring, clean architecture, and production readiness
+- Separated services into dedicated modules
+- Added comprehensive logging
+- Created Pydantic schemas for all requests/responses  
+- Improved error handling and code maintainability
+- Organized code structure for scalability
+
+Author: Mohammad Abdul Rihan
+Repository: https://github.com/MohammadAbdulRihan/AI-voice-Agent
+"""
+
 import os
-import requests
-from dotenv import load_dotenv                    # DAY 2: Environment variables
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File  # DAY 1 + DAY 5
-from fastapi.responses import HTMLResponse        # DAY 3: HTML responses
-from fastapi.staticfiles import StaticFiles      # DAY 3: Static file serving
-from fastapi.templating import Jinja2Templates   # DAY 3: Template engine
-from pydantic import BaseModel                   # DAY 2: Request models
-import shutil                                    # DAY 5: File operations
-from pathlib import Path                         # DAY 5: Path handling
-import assemblyai as aai                         # DAY 6: Speech-to-text
-import google.generativeai as genai             # DAY 8: LLM integration
-from typing import List, Dict                    # DAY 10: Type hints for chat storage
-from datetime import datetime                    # DAY 10: Timestamps for messages
+import logging
+import shutil
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
 
-# DAY 2: Load environment variables from .env file
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
+
+# Import our custom modules
+from schemas import (
+    TextRequest, TTSResponse, STTResponse, VoiceAgentResponse, 
+    HealthResponse, ErrorResponse
+)
+from services import TTSService, STTService, LLMService, ChatManager
+from utils import (
+    setup_logging, generate_session_id, generate_filename, 
+    ensure_upload_directory, validate_audio_file, get_env_variable,
+    create_error_response, create_success_response
+)
+
+# =============================================================================
+# APPLICATION SETUP
+# =============================================================================
+
+# Load environment variables
 load_dotenv()
 
-# =============================================================================
-# GLOBAL HELPER FUNCTIONS
-# =============================================================================
+# Setup logging
+setup_logging(log_level=os.getenv("LOG_LEVEL", "INFO"))
+logger = logging.getLogger(__name__)
 
-async def generate_fallback_tts(message: str):
-    """Generate TTS for fallback messages if possible"""
-    if not MURF_API_KEY:
-        return None
-    
-    try:
-        headers = {"api-key": MURF_API_KEY, "Content-Type": "application/json"}
-        payload = {"voiceId": "en-US-marcus", "text": message, "format": "mp3"}
-        
-        response = requests.post(MURF_TTS_URL, json=payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("audioFile")
-    except:
-        return None
+# Initialize FastAPI app
+app = FastAPI(
+    title="AI Voice Agent",
+    description="Production-ready voice-to-voice conversational AI with comprehensive error handling",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
-# =============================================================================
-# DAY 10: CHAT HISTORY STORAGE (Session Management)
-# =============================================================================
-# In-memory datastore for chat history (session_id -> list of messages)
-chat_sessions: Dict[str, List[Dict]] = {}
-
-def add_message_to_session(session_id: str, role: str, content: str):
-    """Add a message to the chat session history"""
-    if session_id not in chat_sessions:
-        chat_sessions[session_id] = []
-    
-    message = {
-        "role": role,  # "user" or "assistant"
-        "content": content,
-        "timestamp": datetime.now().isoformat()
-    }
-    chat_sessions[session_id].append(message)
-
-def get_session_history(session_id: str) -> List[Dict]:
-    """Get the chat history for a session"""
-    return chat_sessions.get(session_id, [])
-
-def format_history_for_llm(session_id: str, new_user_message: str) -> str:
-    """Format chat history + new message for LLM context"""
-    history = get_session_history(session_id)
-    
-    # Build conversation context
-    conversation = "You are a helpful AI assistant having a conversation. Here's our chat history:\n\n"
-    
-    for msg in history:
-        if msg["role"] == "user":
-            conversation += f"User: {msg['content']}\n"
-        else:
-            conversation += f"Assistant: {msg['content']}\n"
-    
-    # Add the new user message
-    conversation += f"User: {new_user_message}\n"
-    conversation += "Assistant:"
-    
-    return conversation
-
-# =============================================================================
-# DAY 1: BASIC FASTAPI SERVER SETUP
-# =============================================================================
-
-app = FastAPI(title="AI Voice Agent", description="Voice-to-Voice Conversational AI", version="1.0.0")
-
-# DAY 3: Static files and templates setup for frontend integration
-# This tells the server where to find your 'static' files (like script.js)
+# Setup static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# This sets up the template engine to find your HTML files
 templates = Jinja2Templates(directory="templates")
 
-# DAY 3: Main route that serves your HTML page
+# Ensure upload directory exists
+ensure_upload_directory()
+
+# =============================================================================
+# SERVICE INITIALIZATION
+# =============================================================================
+
+# Initialize services
+tts_service = TTSService()
+stt_service = STTService()
+llm_service = LLMService()
+chat_manager = ChatManager()
+
+logger.info("AI Voice Agent services initialized")
+
+# =============================================================================
+# MIDDLEWARE & STARTUP EVENTS
+# =============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Application startup tasks"""
+    logger.info("🚀 Starting AI Voice Agent Server...")
+    logger.info("📊 Features: TTS, STT, LLM, Voice-to-Voice Chat, Conversational Memory")
+    logger.info("🌐 Server will start at: http://localhost:8000")
+    logger.info("💡 Open your browser and go to http://localhost:8000 to start using the AI Voice Agent!")
+    
+    # Check service availability
+    services_status = {
+        "TTS": "✅" if tts_service.is_available() else "❌",
+        "STT": "✅" if stt_service.is_available() else "❌", 
+        "LLM": "✅" if llm_service.is_available() else "❌"
+    }
+    
+    logger.info(f"Services status: {services_status}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Application shutdown tasks"""
+    logger.info("🛑 Shutting down AI Voice Agent Server...")
+
+# =============================================================================
+# MAIN ROUTES
+# =============================================================================
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
+    """Serve the main application interface"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-# DAY 1: Simple endpoint to prevent 404 errors from old cached requests
-@app.get("/api/hello")
-async def hello():
-    return {"message": "TTS API is running", "status": "success"}
-
-# DAY 1: Favicon endpoint to prevent 404 errors
-@app.get("/favicon.ico")
-async def favicon():
-    return {"message": "No favicon configured"}
-
-# =============================================================================
-# DAY 2: API CONFIGURATIONS & MODELS
-# =============================================================================
-
-# DAY 2: The Pydantic model for the incoming JSON
-class TextRequest(BaseModel):
-    text: str
-
-# DAY 2: Murf TTS API Configuration
-MURF_API_KEY = os.getenv("MURF_API_KEY")
-MURF_TTS_URL = "https://api.murf.ai/v1/speech/generate-with-key"
-
-# DAY 6: AssemblyAI Configuration for Speech-to-Text
-ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
-aai.settings.api_key = ASSEMBLYAI_API_KEY
-
-# DAY 8: Google Gemini Configuration for LLM responses
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-
-# =============================================================================
-# DAY 2: TEXT-TO-SPEECH ENDPOINT (Murf TTS Integration)
-# Enhanced with Robust Error Handling
-# =============================================================================
-
-@app.post("/generate-audio")
-def generate_audio(request: TextRequest):
-    """
-    Text-to-Speech endpoint with comprehensive error handling and fallback responses
-    """
-    # Input validation
-    if not request.text.strip():
-        raise HTTPException(status_code=400, detail="Text cannot be empty")
-
-    # API key validation
-    if not MURF_API_KEY:
-        return {
-            "status": "error",
-            "error_type": "api_key_missing",
-            "message": "TTS service temporarily unavailable - API key not configured",
-            "fallback_message": "I'm having trouble with my voice service right now. Please try again later.",
-            "audio_url": None
-        }
-
-    headers = {
-        "api-key": MURF_API_KEY,
-        "Content-Type": "application/json"
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint"""
+    services = {
+        "tts": "available" if tts_service.is_available() else "unavailable",
+        "stt": "available" if stt_service.is_available() else "unavailable",
+        "llm": "available" if llm_service.is_available() else "unavailable"
     }
+    
+    all_available = all(status == "available" for status in services.values())
+    
+    return HealthResponse(
+        status="healthy" if all_available else "degraded",
+        message="All services operational" if all_available else "Some services unavailable",
+        services=services,
+        timestamp=datetime.now()
+    )
 
-    payload = {
-        "voiceId": "en-US-marcus",
-        "text": request.text,
-        "format": "mp3"
-    }
+# =============================================================================
+# TTS ENDPOINTS
+# =============================================================================
 
+@app.post("/tts/generate", response_model=TTSResponse)
+async def generate_tts(request: TextRequest):
+    """Generate speech from text"""
     try:
-        response = requests.post(MURF_TTS_URL, json=payload, headers=headers, timeout=30)
-        response.raise_for_status()
-        data = response.json()
+        logger.info(f"TTS request for text: {request.text[:50]}...")
         
-        audio_url = data.get("audioFile")
-        if not audio_url:
-            # Murf API response doesn't contain audio URL
-            return {
-                "status": "error",
-                "error_type": "invalid_response",
-                "message": "TTS service returned invalid response",
-                "fallback_message": "I'm having trouble generating audio right now. Please try again.",
-                "audio_url": None,
-                "api_response": data
-            }
+        if not request.text.strip():
+            return TTSResponse(
+                status="error",
+                error="Empty text provided"
+            )
         
-        return {
-            "status": "success",
-            "audio_url": audio_url,
-            "text": request.text,
-            "voice_id": "en-US-marcus"
-        }
+        response = await tts_service.generate_speech(request.text, request.voice_id)
+        return response
         
-    except requests.exceptions.Timeout:
-        return {
-            "status": "error",
-            "error_type": "timeout",
-            "message": "TTS service timeout - request took too long",
-            "fallback_message": "I'm taking too long to respond right now. Please try again in a moment.",
-            "audio_url": None
-        }
-    except requests.exceptions.ConnectionError:
-        return {
-            "status": "error",
-            "error_type": "connection_error",
-            "message": "Cannot connect to TTS service",
-            "fallback_message": "I'm having trouble connecting to my voice service. Please check your internet connection.",
-            "audio_url": None
-        }
-    except requests.exceptions.HTTPError as e:
-        status_code = e.response.status_code if e.response else "unknown"
-        return {
-            "status": "error",
-            "error_type": "http_error",
-            "message": f"TTS API returned error {status_code}",
-            "fallback_message": "My voice service is having issues right now. Please try again later.",
-            "audio_url": None,
-            "http_status": status_code
-        }
-    except requests.exceptions.RequestException as e:
-        return {
-            "status": "error",
-            "error_type": "request_error",
-            "message": f"TTS API request failed: {str(e)}",
-            "fallback_message": "I'm having trouble connecting right now. Please try again.",
-            "audio_url": None
-        }
     except Exception as e:
-        return {
-            "status": "error",
-            "error_type": "unexpected_error",
-            "message": f"Unexpected error in TTS generation: {str(e)}",
-            "fallback_message": "Something unexpected happened. Please try again.",
-            "audio_url": None
-        }
+        logger.error(f"TTS endpoint error: {str(e)}")
+        return TTSResponse(
+            status="error",
+            error="TTS service failed"
+        )
 
-# --- AUDIO UPLOAD ENDPOINT ---
-
-# Create uploads directory if it doesn't exist
-UPLOADS_DIR = Path("uploads")
-UPLOADS_DIR.mkdir(exist_ok=True)
-
-@app.post("/upload-audio")
-async def upload_audio(audio_file: UploadFile = File(...)):
-    """
-    Upload endpoint that receives audio files from the echo bot,
-    saves them temporarily, and returns file information.
-    """
+@app.post("/tts/echo", response_model=TTSResponse)
+async def echo_tts(request: TextRequest):
+    """Echo bot with TTS response"""
     try:
-        # Validate file type (basic check)
-        if not audio_file.content_type or not audio_file.content_type.startswith('audio/'):
-            raise HTTPException(status_code=400, detail="File must be an audio file")
+        echo_text = f"You said: {request.text}"
+        response = await tts_service.generate_speech(echo_text)
         
-        # Generate a unique filename
-        import uuid
-        file_extension = ".webm"  # Default for our recorder
-        if audio_file.filename:
-            file_extension = Path(audio_file.filename).suffix or ".webm"
+        if response.status == "success":
+            response.message = f"Echo: {request.text}"
+            
+        return response
         
-        unique_filename = f"recording_{uuid.uuid4().hex[:8]}{file_extension}"
-        file_path = UPLOADS_DIR / unique_filename
+    except Exception as e:
+        logger.error(f"Echo TTS error: {str(e)}")
+        return TTSResponse(
+            status="error",
+            error="Echo service failed"
+        )
+
+# =============================================================================
+# STT ENDPOINTS  
+# =============================================================================
+
+@app.post("/transcribe/file", response_model=STTResponse)
+async def transcribe_audio_file(audio_file: UploadFile = File(...)):
+    """Transcribe uploaded audio file"""
+    try:
+        logger.info(f"STT request for file: {audio_file.filename}")
         
-        # Save the uploaded file
+        # Validate file
+        if not audio_file.filename:
+            return STTResponse(
+                status="error",
+                error="No file provided"
+            )
+        
+        # Save uploaded file
+        filename = generate_filename(extension="webm")
+        file_path = Path("uploads") / filename
+        
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(audio_file.file, buffer)
         
-        # Get file size
-        file_size = file_path.stat().st_size
+        # Validate saved file
+        if not validate_audio_file(str(file_path)):
+            file_path.unlink(missing_ok=True)
+            return STTResponse(
+                status="error",
+                error="Invalid or empty audio file"
+            )
         
-        return {
-            "status": "success",
-            "message": "Audio file uploaded successfully",
-            "filename": unique_filename,
-            "content_type": audio_file.content_type,
-            "size_bytes": file_size,
-            "size_kb": round(file_size / 1024, 2),
-            "upload_path": str(file_path)
-        }
+        # Transcribe
+        response = await stt_service.transcribe_audio(str(file_path))
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
-# --- END OF UPLOAD ENDPOINT ---
-
-# =============================================================================
-# DAY 6: SPEECH-TO-TEXT TRANSCRIPTION ENDPOINT (AssemblyAI Integration)
-# Enhanced with Robust Error Handling
-# =============================================================================
-
-@app.post("/transcribe/file")
-async def transcribe_audio(audio_file: UploadFile = File(...)):
-    """
-    Speech-to-Text endpoint with comprehensive error handling
-    """
-    # API key validation
-    if not ASSEMBLYAI_API_KEY:
-        return {
-            "status": "error",
-            "error_type": "api_key_missing",
-            "message": "Speech recognition service unavailable - API key not configured",
-            "fallback_message": "I can't understand audio right now. Please type your message instead.",
-            "transcription": None
-        }
-    
-    try:
-        # File validation
-        if not audio_file.content_type or not audio_file.content_type.startswith('audio/'):
-            return {
-                "status": "error",
-                "error_type": "invalid_file",
-                "message": "Invalid audio file format",
-                "fallback_message": "I couldn't process that audio file. Please try recording again.",
-                "transcription": None
-            }
+        # Cleanup
+        file_path.unlink(missing_ok=True)
         
-        # Read audio data
-        audio_data = await audio_file.read()
-        
-        if len(audio_data) == 0:
-            return {
-                "status": "error",
-                "error_type": "empty_file",
-                "message": "Audio file is empty",
-                "fallback_message": "The audio recording seems to be empty. Please try recording again.",
-                "transcription": None
-            }
-        
-        # Transcribe with AssemblyAI
-        transcriber = aai.Transcriber()
-        transcript = transcriber.transcribe(audio_data)
-        
-        if transcript.status == aai.TranscriptStatus.error:
-            return {
-                "status": "error",
-                "error_type": "transcription_failed",
-                "message": f"AssemblyAI transcription failed: {transcript.error}",
-                "fallback_message": "I couldn't understand what you said. Please try speaking more clearly.",
-                "transcription": None
-            }
-        
-        if not transcript.text or not transcript.text.strip():
-            return {
-                "status": "error",
-                "error_type": "no_speech_detected",
-                "message": "No speech detected in audio",
-                "fallback_message": "I didn't hear any speech in that recording. Please try speaking louder.",
-                "transcription": None
-            }
-        
-        return {
-            "status": "success",
-            "transcription": transcript.text,
-            "confidence": getattr(transcript, 'confidence', None),
-            "audio_duration": getattr(transcript, 'audio_duration', None)
-        }
+        return response
         
     except Exception as e:
-        return {
-            "status": "error",
-            "error_type": "unexpected_error",
-            "message": f"Unexpected error in transcription: {str(e)}",
-            "fallback_message": "Something went wrong while processing your audio. Please try again.",
-            "transcription": None
-        }
-
-# --- ECHO BOT v2 ENDPOINT ---
-
-@app.post("/tts/echo")
-async def echo_with_tts(audio_file: UploadFile = File(...)):
-    """
-    Echo Bot v2: Transcribe audio and respond with Murf TTS voice
-    """
-    # Step 1: Validate API keys
-    if not ASSEMBLYAI_API_KEY:
-        raise HTTPException(status_code=500, detail="AssemblyAI API key not configured")
-    if not MURF_API_KEY:
-        raise HTTPException(status_code=500, detail="Murf API key not configured")
-    
-    # Step 2: Transcribe the audio
-    audio_data = await audio_file.read()
-    transcript = aai.Transcriber().transcribe(audio_data)
-    
-    if transcript.status == aai.TranscriptStatus.error:
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {transcript.error}")
-    
-    # Step 3: Generate TTS audio using Murf
-    headers = {
-        "api-key": MURF_API_KEY,
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "voiceId": "en-US-marcus",  # You can change this to any Murf voice
-        "text": transcript.text,
-        "format": "mp3"
-    }
-    
-    try:
-        response = requests.post(MURF_TTS_URL, json=payload, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Murf TTS API call failed: {e}")
-    
-    audio_url = data.get("audioFile")
-    if not audio_url:
-        raise HTTPException(status_code=500, detail=f"Audio URL not found in Murf API response: {data}")
-    
-    # Step 4: Return the transcription and audio URL
-    return {
-        "transcription": transcript.text,
-        "audio_url": audio_url,
-        "voice_id": "en-US-marcus"
-    }
-
-# --- END OF ECHO BOT v2 ENDPOINT ---
-
-# --- LLM QUERY ENDPOINT (Voice-to-Voice) ---
-
-@app.post("/llm/query")
-async def query_llm_voice(audio_file: UploadFile = File(...)):
-    """
-    Voice-to-Voice AI Bot with comprehensive error handling and fallback TTS
-    """
-    try:
-        # Step 1: Validate API keys
-        missing_apis = []
-        if not ASSEMBLYAI_API_KEY:
-            missing_apis.append("AssemblyAI")
-        if not GEMINI_API_KEY:
-            missing_apis.append("Google")
-        if not MURF_API_KEY:
-            missing_apis.append("Murf")
-        
-        if missing_apis:
-            fallback_message = f"API keys are missing for: {', '.join(missing_apis)}. Please check your configuration."
-            fallback_audio = await generate_fallback_tts(fallback_message) if MURF_API_KEY else None
-            
-            return {
-                "status": "error",
-                "error_type": "api_keys_missing",
-                "message": f"Missing API keys: {missing_apis}",
-                "fallback_message": fallback_message,
-                "audio_url": fallback_audio,
-            }
-        
-        # Step 2: Transcribe the audio using AssemblyAI
-        try:
-            audio_data = await audio_file.read()
-            if len(audio_data) == 0:
-                fallback_message = "No audio detected or file is empty. Please record your voice and try again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                
-                return {
-                    "status": "error",
-                    "error_type": "empty_audio",
-                    "message": "Audio file is empty",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                }
-            
-            transcript = aai.Transcriber().transcribe(audio_data)
-            
-            if transcript.status == aai.TranscriptStatus.error:
-                fallback_message = "Speech recognition failed. Please speak clearly and try again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                
-                return {
-                    "status": "error",
-                    "error_type": "transcription_failed",
-                    "message": f"Transcription failed: {transcript.error}",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                }
-            
-            if not transcript.text or not transcript.text.strip():
-                fallback_message = "No speech detected in the audio. Please speak clearly and try again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                
-                return {
-                    "status": "error",
-                    "error_type": "no_speech_detected",
-                    "message": "No speech detected in audio",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                }
-            
-        except Exception as e:
-            fallback_message = "There was an issue processing your audio. Please try recording again."
-            fallback_audio = await generate_fallback_tts(fallback_message)
-            
-            return {
-                "status": "error",
-                "error_type": "transcription_error",
-                "message": f"Transcription error: {str(e)}",
-                "fallback_message": fallback_message,
-                "audio_url": fallback_audio,
-            }
-        
-        # Step 3: Send transcription to Gemini LLM
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            llm_response = model.generate_content(transcript.text)
-            
-            if not llm_response.text:
-                fallback_message = "I'm having trouble thinking right now. Please try again in a moment."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                
-                return {
-                    "status": "error",
-                    "error_type": "empty_llm_response",
-                    "message": "Empty response from Gemini API",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                }
-            
-        except Exception as e:
-            fallback_message = "I'm having trouble connecting right now. Please try again."
-            fallback_audio = await generate_fallback_tts(fallback_message)
-            
-            return {
-                "status": "error",
-                "error_type": "llm_error",
-                "message": f"LLM error: {str(e)}",
-                "fallback_message": fallback_message,
-                "audio_url": fallback_audio,
-            }
-        
-        # Step 4: Convert LLM response to speech using Murf TTS
-        try:
-            headers = {
-                "api-key": MURF_API_KEY,
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "voiceId": "en-US-marcus",
-                "text": llm_response.text,
-                "format": "mp3"
-            }
-            
-            tts_response = requests.post(MURF_TTS_URL, json=payload, headers=headers, timeout=30)
-            tts_response.raise_for_status()
-            tts_data = tts_response.json()
-            
-            audio_url = tts_data.get("audioFile")
-            if not audio_url:
-                # Partial success - we have text but no audio
-                return {
-                    "status": "partial_success",
-                    "user_query": transcript.text,
-                    "llm_response": llm_response.text,
-                    "audio_url": None,
-                    "fallback_message": "AI responded but voice synthesis failed. Here's the text response.",
-                    "model": "gemini-1.5-flash",
-                    "voice_id": "en-US-marcus"
-                }
-            
-            # Full success
-            return {
-                "status": "success",
-                "user_query": transcript.text,
-                "llm_response": llm_response.text,
-                "audio_url": audio_url,
-                "model": "gemini-1.5-flash",
-                "voice_id": "en-US-marcus"
-            }
-            
-        except Exception as e:
-            # Partial success - we have text but TTS failed
-            return {
-                "status": "partial_success",
-                "user_query": transcript.text,
-                "llm_response": llm_response.text,
-                "audio_url": None,
-                "fallback_message": "AI responded but voice synthesis failed. Here's the text response.",
-                "error_details": str(e),
-                "model": "gemini-1.5-flash",
-                "voice_id": "en-US-marcus"
-            }
-        
-    except Exception as e:
-        # Unexpected error
-        fallback_message = "Something unexpected happened. Please try again."
-        fallback_audio = await generate_fallback_tts(fallback_message) if MURF_API_KEY else None
-        
-        return {
-            "status": "error",
-            "error_type": "unexpected_error",
-            "message": f"Unexpected error: {str(e)}",
-            "fallback_message": fallback_message,
-            "audio_url": fallback_audio,
-        }
-
-# --- END OF LLM QUERY ENDPOINT ---
+        logger.error(f"STT endpoint error: {str(e)}")
+        return STTResponse(
+            status="error",
+            error="Transcription service failed"
+        )
 
 # =============================================================================
-# DAY 10: CONVERSATIONAL AGENT ENDPOINT (Enhanced Error Handling)
-# Audio → STT → Chat History → LLM → TTS → Audio Response
+# LLM ENDPOINTS
 # =============================================================================
 
-@app.post("/agent/chat/{session_id}")
-async def conversational_agent(session_id: str, audio_file: UploadFile = File(...)):
-    """
-    Conversational Agent with comprehensive error handling and fallback responses
-    """
-    
-    # Step 1: Validate API keys
-    missing_apis = []
-    if not ASSEMBLYAI_API_KEY:
-        missing_apis.append("Speech Recognition")
-    if not GEMINI_API_KEY:
-        missing_apis.append("AI Brain")
-    if not MURF_API_KEY:
-        missing_apis.append("Voice Generation")
-    
-    if missing_apis:
-        fallback_message = f"I'm having trouble with my {', '.join(missing_apis)} service{'s' if len(missing_apis) > 1 else ''}. Please try again later."
-        fallback_audio = await generate_fallback_tts(fallback_message) if MURF_API_KEY else None
-        
-        return {
-            "status": "error",
-            "error_type": "api_keys_missing",
-            "message": f"Missing API keys: {', '.join(missing_apis)}",
-            "fallback_message": fallback_message,
-            "audio_url": fallback_audio,
-            "session_id": session_id
-        }
+@app.post("/llm/query", response_model=VoiceAgentResponse)
+async def llm_query_with_voice(audio_file: UploadFile = File(...)):
+    """Process voice input through full AI pipeline"""
+    session_id = generate_session_id()
     
     try:
-        # Step 2: Transcribe the audio using AssemblyAI
-        try:
-            audio_data = await audio_file.read()
-            
-            if len(audio_data) == 0:
-                fallback_message = "I didn't receive any audio. Please try recording again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                return {
-                    "status": "error",
-                    "error_type": "empty_audio",
-                    "message": "Audio file is empty",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                    "session_id": session_id
-                }
-            
-            transcriber = aai.Transcriber()
-            transcript = transcriber.transcribe(audio_data)
-            
-            if transcript.status == aai.TranscriptStatus.error:
-                fallback_message = "I couldn't understand what you said. Please try speaking more clearly."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                return {
-                    "status": "error",
-                    "error_type": "transcription_failed",
-                    "message": f"Transcription failed: {transcript.error}",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                    "session_id": session_id
-                }
-            
-            if not transcript.text or not transcript.text.strip():
-                fallback_message = "I didn't hear any speech in that recording. Please try again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                return {
-                    "status": "error",
-                    "error_type": "no_speech_detected",
-                    "message": "No speech detected in audio",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                    "session_id": session_id
-                }
-            
-            user_message = transcript.text.strip()
-            
-        except Exception as e:
-            fallback_message = "I'm having trouble processing your audio right now. Please try again."
-            fallback_audio = await generate_fallback_tts(fallback_message)
-            return {
-                "status": "error",
-                "error_type": "transcription_error",
-                "message": f"Audio processing failed: {str(e)}",
-                "fallback_message": fallback_message,
-                "audio_url": fallback_audio,
-                "session_id": session_id
-            }
+        logger.info(f"LLM voice query for session: {session_id}")
         
-        # Step 3: Get chat history and format for LLM with context
-        conversation_context = format_history_for_llm(session_id, user_message)
+        # Step 1: Save and validate audio
+        filename = generate_filename()
+        file_path = Path("uploads") / filename
         
-        # Step 4: Send conversation context to Gemini LLM
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            llm_response = model.generate_content(conversation_context)
-            
-            if not llm_response.text or not llm_response.text.strip():
-                fallback_message = "I'm having trouble thinking right now. Please try asking again."
-                fallback_audio = await generate_fallback_tts(fallback_message)
-                return {
-                    "status": "error",
-                    "error_type": "empty_llm_response",
-                    "message": "Empty response from Gemini API",
-                    "fallback_message": fallback_message,
-                    "audio_url": fallback_audio,
-                    "session_id": session_id,
-                    "user_message": user_message
-                }
-            
-            assistant_message = llm_response.text.strip()
-            
-        except Exception as e:
-            fallback_message = "My AI brain is having trouble right now. Please try again in a moment."
-            fallback_audio = await generate_fallback_tts(fallback_message)
-            return {
-                "status": "error",
-                "error_type": "llm_error",
-                "message": f"Gemini API failed: {str(e)}",
-                "fallback_message": fallback_message,
-                "audio_url": fallback_audio,
-                "session_id": session_id,
-                "user_message": user_message
-            }
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(audio_file.file, buffer)
         
-        # Step 5: Store both user and assistant messages in chat history
-        add_message_to_session(session_id, "user", user_message)
-        add_message_to_session(session_id, "assistant", assistant_message)
+        if not validate_audio_file(str(file_path)):
+            file_path.unlink(missing_ok=True)
+            return VoiceAgentResponse(
+                status="error",
+                error_type="empty_audio",
+                fallback_message="No audio detected. Please record a clear message."
+            )
         
-        # Step 6: Convert LLM response to speech using Murf TTS
-        try:
-            headers = {
-                "api-key": MURF_API_KEY,
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "voiceId": "en-US-marcus",
-                "text": assistant_message,
-                "format": "mp3"
-            }
-            
-            tts_response = requests.post(MURF_TTS_URL, json=payload, headers=headers, timeout=30)
-            tts_response.raise_for_status()
-            tts_data = tts_response.json()
-            
-            audio_url = tts_data.get("audioFile")
-            if not audio_url:
-                # TTS failed, but we have the text response
-                return {
-                    "status": "partial_success",
-                    "error_type": "tts_failed",
-                    "message": "Voice generation failed, but text response is available",
-                    "fallback_message": "I can think, but I'm having trouble speaking. Here's my response in text.",
-                    "session_id": session_id,
-                    "user_message": user_message,
-                    "assistant_message": assistant_message,
-                    "audio_url": None,
-                    "conversation_length": len(get_session_history(session_id)),
-                    "model": "gemini-1.5-flash"
-                }
-            
-            # Step 7: Success! Return complete conversation flow
-            return {
-                "status": "success",
-                "session_id": session_id,
-                "user_message": user_message,
-                "assistant_message": assistant_message,
-                "audio_url": audio_url,
-                "conversation_length": len(get_session_history(session_id)),
-                "model": "gemini-1.5-flash",
-                "voice_id": "en-US-marcus"
-            }
-            
-        except Exception as e:
-            # TTS failed, but we have the LLM response
-            return {
-                "status": "partial_success",
-                "error_type": "tts_error",
-                "message": f"Voice generation failed: {str(e)}",
-                "fallback_message": "I can think, but I'm having trouble speaking right now.",
-                "session_id": session_id,
-                "user_message": user_message,
-                "assistant_message": assistant_message,
-                "audio_url": None,
-                "conversation_length": len(get_session_history(session_id)),
-                "model": "gemini-1.5-flash"
-            }
+        # Step 2: Transcribe audio
+        stt_response = await stt_service.transcribe_audio(str(file_path))
+        file_path.unlink(missing_ok=True)
         
+        if stt_response.status != "success":
+            fallback_audio = await tts_service.generate_fallback_speech(
+                "Speech recognition failed. Please speak clearly and try again."
+            )
+            return VoiceAgentResponse(
+                status="error",
+                error_type="transcription_failed", 
+                fallback_message="Speech recognition failed. Please speak clearly and try again.",
+                audio_url=fallback_audio
+            )
+        
+        user_message = stt_response.transcript
+        
+        # Step 3: Generate AI response
+        llm_response = await llm_service.generate_response(user_message)
+        
+        if llm_response.status != "success":
+            fallback_audio = await tts_service.generate_fallback_speech(
+                "My AI brain is having trouble right now. Please try again in a moment."
+            )
+            return VoiceAgentResponse(
+                status="error",
+                error_type="llm_error",
+                user_message=user_message,
+                fallback_message="My AI brain is having trouble right now. Please try again in a moment.",
+                audio_url=fallback_audio
+            )
+        
+        ai_response = llm_response.response
+        
+        # Step 4: Generate voice response
+        tts_response = await tts_service.generate_speech(ai_response)
+        
+        if tts_response.status == "success":
+            return VoiceAgentResponse(
+                status="success",
+                user_message=user_message,
+                assistant_message=ai_response,
+                audio_url=tts_response.audio_url,
+                session_id=session_id,
+                timestamp=datetime.now()
+            )
+        else:
+            return VoiceAgentResponse(
+                status="partial_success",
+                user_message=user_message,
+                assistant_message=ai_response,
+                fallback_message="AI responded but voice synthesis failed",
+                session_id=session_id,
+                timestamp=datetime.now()
+            )
+            
     except Exception as e:
-        # Catch-all for any unexpected errors
-        fallback_message = "Something unexpected happened. Please try again."
-        fallback_audio = await generate_fallback_tts(fallback_message)
-        return {
-            "status": "error",
-            "error_type": "unexpected_error",
-            "message": f"Unexpected error: {str(e)}",
-            "fallback_message": fallback_message,
-            "audio_url": fallback_audio,
-            "session_id": session_id
-        }
+        logger.error(f"LLM pipeline error: {str(e)}")
+        fallback_audio = await tts_service.generate_fallback_speech(
+            "Something went wrong with my processing. Please try again."
+        )
+        return VoiceAgentResponse(
+            status="error",
+            error_type="pipeline_error",
+            fallback_message="Something went wrong with my processing. Please try again.",
+            audio_url=fallback_audio,
+            session_id=session_id
+        )
 
-# --- GET CHAT HISTORY ENDPOINT ---
+# =============================================================================
+# CONVERSATIONAL AGENT ENDPOINTS
+# =============================================================================
+
+@app.post("/agent/chat/{session_id}", response_model=VoiceAgentResponse)
+async def conversational_voice_agent(session_id: str, audio_file: UploadFile = File(...)):
+    """Complete conversational voice agent with memory"""
+    try:
+        logger.info(f"Conversational agent request for session: {session_id}")
+        
+        # Check service availability
+        if not all([tts_service.is_available(), stt_service.is_available(), llm_service.is_available()]):
+            missing_services = []
+            if not tts_service.is_available(): missing_services.append("TTS")
+            if not stt_service.is_available(): missing_services.append("STT") 
+            if not llm_service.is_available(): missing_services.append("LLM")
+            
+            error_msg = f"Required services unavailable: {', '.join(missing_services)}. Please check your API keys."
+            fallback_audio = await tts_service.generate_fallback_speech(error_msg)
+            
+            return VoiceAgentResponse(
+                status="error",
+                error_type="api_keys_missing",
+                fallback_message=error_msg,
+                audio_url=fallback_audio,
+                session_id=session_id
+            )
+        
+        # Step 1: Process audio file
+        filename = generate_filename()
+        file_path = Path("uploads") / filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(audio_file.file, buffer)
+        
+        if not validate_audio_file(str(file_path)):
+            file_path.unlink(missing_ok=True)
+            error_msg = "No audio detected. Please record a clear message and try again."
+            fallback_audio = await tts_service.generate_fallback_speech(error_msg)
+            
+            return VoiceAgentResponse(
+                status="error",
+                error_type="empty_audio",
+                fallback_message=error_msg,
+                audio_url=fallback_audio,
+                session_id=session_id
+            )
+        
+        # Step 2: Speech-to-Text
+        stt_response = await stt_service.transcribe_audio(str(file_path))
+        file_path.unlink(missing_ok=True)
+        
+        if stt_response.status != "success":
+            error_msg = "I couldn't understand what you said. Please speak clearly and try again."
+            fallback_audio = await tts_service.generate_fallback_speech(error_msg)
+            
+            return VoiceAgentResponse(
+                status="error",
+                error_type="no_speech_detected" if "No speech" in str(stt_response.error) else "transcription_failed",
+                fallback_message=error_msg,
+                audio_url=fallback_audio,
+                session_id=session_id
+            )
+        
+        user_message = stt_response.transcript
+        
+        # Step 3: Get conversation history and generate LLM response
+        chat_history = chat_manager.get_recent_context(session_id, max_messages=10)
+        llm_response = await llm_service.generate_conversational_response(user_message, chat_history)
+        
+        if llm_response.status != "success":
+            error_msg = "My AI brain is having trouble right now. Please try again in a moment."
+            fallback_audio = await tts_service.generate_fallback_speech(error_msg)
+            
+            return VoiceAgentResponse(
+                status="error",
+                error_type="llm_error",
+                user_message=user_message,
+                fallback_message=error_msg,
+                audio_url=fallback_audio,
+                session_id=session_id
+            )
+        
+        ai_response = llm_response.response
+        
+        # Step 4: Save to chat history
+        chat_manager.add_message(session_id, "user", user_message)
+        chat_manager.add_message(session_id, "assistant", ai_response)
+        
+        # Step 5: Generate speech response
+        tts_response = await tts_service.generate_speech(ai_response)
+        
+        if tts_response.status == "success":
+            logger.info(f"Complete conversation successful for session: {session_id}")
+            return VoiceAgentResponse(
+                status="success",
+                user_message=user_message,
+                assistant_message=ai_response,
+                audio_url=tts_response.audio_url,
+                session_id=session_id,
+                timestamp=datetime.now()
+            )
+        else:
+            logger.warning(f"TTS failed but conversation succeeded for session: {session_id}")
+            return VoiceAgentResponse(
+                status="partial_success", 
+                user_message=user_message,
+                assistant_message=ai_response,
+                fallback_message="I can respond but my voice synthesis isn't working right now.",
+                session_id=session_id,
+                timestamp=datetime.now()
+            )
+            
+    except Exception as e:
+        logger.error(f"Conversational agent error: {str(e)}")
+        error_msg = "Something unexpected happened. Please try again."
+        fallback_audio = await tts_service.generate_fallback_speech(error_msg)
+        
+        return VoiceAgentResponse(
+            status="error",
+            error_type="unexpected_error",
+            fallback_message=error_msg,
+            audio_url=fallback_audio,
+            session_id=session_id
+        )
 
 @app.get("/agent/history/{session_id}")
 async def get_chat_history(session_id: str):
-    """
-    Get the chat history for a session
-    """
-    history = get_session_history(session_id)
-    return {
-        "status": "success",
-        "session_id": session_id,
-        "messages": history,
-        "message_count": len(history)
-    }
-
-# --- END OF CONVERSATIONAL AGENT ENDPOINTS ---
-
-# --- FILE MANAGEMENT ENDPOINTS ---
-
-@app.get("/list-uploads")
-async def list_uploads():
-    """
-    List all uploaded audio files with their details
-    """
+    """Get chat history for a session"""
     try:
-        files = []
-        for file_path in UPLOADS_DIR.iterdir():
-            if file_path.is_file():
-                stat = file_path.stat()
-                files.append({
-                    "filename": file_path.name,
-                    "size_bytes": stat.st_size,
-                    "size_kb": round(stat.st_size / 1024, 2),
-                    "upload_time": stat.st_mtime,
-                    "file_path": str(file_path)
-                })
-        
-        # Sort by upload time (newest first)
-        files.sort(key=lambda x: x["upload_time"], reverse=True)
-        
-        return {
-            "status": "success",
-            "total_files": len(files),
-            "files": files
-        }
+        history = chat_manager.get_history_as_dict(session_id)
+        return create_success_response(
+            {"session_id": session_id, "messages": history, "count": len(history)},
+            "Chat history retrieved successfully"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
-
-@app.get("/download/{filename}")
-async def download_file(filename: str):
-    """
-    Download a specific uploaded audio file
-    """
-    from fastapi.responses import FileResponse
-    
-    file_path = UPLOADS_DIR / filename
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        path=str(file_path),
-        filename=filename,
-        media_type='audio/webm'
-    )
-
-# --- END OF FILE MANAGEMENT ENDPOINTS ---
-
-# --- WEB INTERFACE FOR UPLOADED FILES ---
-
-@app.get("/files", response_class=HTMLResponse)
-async def view_files(request: Request):
-    """
-    Web interface to view and play uploaded audio files
-    """
-    return templates.TemplateResponse("files.html", {"request": request})
-
-# --- END OF WEB INTERFACE ---
+        logger.error(f"Error retrieving chat history: {str(e)}")
+        return create_error_response("history_error", "Failed to retrieve chat history")
 
 # =============================================================================
-# DAY 1-10: APPLICATION STARTUP
+# FILE MANAGEMENT ENDPOINTS
+# =============================================================================
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload and save audio file"""
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
+        
+        filename = generate_filename()
+        file_path = Path("uploads") / filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        logger.info(f"File uploaded successfully: {filename}")
+        return create_success_response(
+            {"filename": filename, "path": str(file_path)},
+            "File uploaded successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"File upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail="File upload failed")
+
+@app.get("/files/{filename}")
+async def get_file(filename: str):
+    """Download file by filename"""
+    try:
+        file_path = Path("uploads") / filename
+        
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        return FileResponse(
+            path=str(file_path),
+            media_type="audio/wav",
+            filename=filename
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"File retrieval error: {str(e)}")
+        raise HTTPException(status_code=500, detail="File retrieval failed")
+
+@app.get("/files")
+async def file_manager(request: Request):
+    """File management interface"""
+    return templates.TemplateResponse("file_manager.html", {"request": request})
+
+# =============================================================================
+# LEGACY COMPATIBILITY ENDPOINTS
+# =============================================================================
+
+@app.get("/api/hello")
+async def hello():
+    """Legacy compatibility endpoint"""
+    return {"message": "AI Voice Agent API is running", "status": "success", "version": "2.0.0"}
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Favicon endpoint"""
+    return {"message": "No favicon configured"}
+
+# =============================================================================
+# APPLICATION ENTRY POINT
 # =============================================================================
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting AI Voice Agent Server...")
-    print("📊 Features: TTS, STT, LLM, Voice-to-Voice Chat, Conversational Memory")
-    print("🌐 Server will start at: http://localhost:8000")
-    print("💡 Open your browser and go to http://localhost:8000 to start using the AI Voice Agent!")
+    
+    host = get_env_variable("HOST", "0.0.0.0")
+    port = int(get_env_variable("PORT", "8000"))
+    debug = get_env_variable("DEBUG", "True").lower() == "true"
     
     uvicorn.run(
         "app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
+        host=host,
+        port=port,
+        reload=debug,
         log_level="info"
     )

@@ -57,6 +57,11 @@ Thumbs.db
 *.log
 logs/
 
+# Uploads directory (keep folder but ignore contents)
+uploads/*.webm
+uploads/*.wav
+uploads/*.mp3
+
 # Runtime data
 pids
 *.pid
