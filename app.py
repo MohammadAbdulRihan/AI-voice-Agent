@@ -19,11 +19,12 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
+import json
 
 # Import our custom modules
 from schemas import (
@@ -128,6 +129,130 @@ async def health_check():
         services=services,
         timestamp=datetime.now()
     )
+
+# =============================================================================
+# WEBSOCKET ENDPOINTS
+# =============================================================================
+
+class ConnectionManager:
+    """Manages WebSocket connections"""
+    
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        """Accept a new WebSocket connection"""
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"New WebSocket connection established. Total connections: {len(self.active_connections)}")
+    
+    def disconnect(self, websocket: WebSocket):
+        """Remove a WebSocket connection"""
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            logger.info(f"WebSocket connection closed. Total connections: {len(self.active_connections)}")
+    
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        """Send a message to a specific WebSocket connection"""
+        try:
+            await websocket.send_text(message)
+        except Exception as e:
+            logger.error(f"Error sending message to WebSocket: {e}")
+            self.disconnect(websocket)
+    
+    async def broadcast(self, message: str):
+        """Send a message to all connected WebSocket clients"""
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                logger.error(f"Error broadcasting to WebSocket: {e}")
+                disconnected.append(connection)
+        
+        # Remove disconnected connections
+        for connection in disconnected:
+            self.disconnect(connection)
+
+# Initialize connection manager
+manager = ConnectionManager()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time communication"""
+    await manager.connect(websocket)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            logger.info(f"Received WebSocket message: {data}")
+            
+            try:
+                # Try to parse as JSON
+                message_data = json.loads(data)
+                message_type = message_data.get("type", "echo")
+                message_content = message_data.get("message", data)
+                
+                # Handle different message types
+                if message_type == "echo":
+                    response = {
+                        "type": "echo_response",
+                        "original": message_content,
+                        "echo": f"Server echo: {message_content}",
+                        "timestamp": datetime.now().isoformat(),
+                        "server": "AI Voice Agent v2.0"
+                    }
+                elif message_type == "ping":
+                    response = {
+                        "type": "pong",
+                        "message": "pong",
+                        "timestamp": datetime.now().isoformat(),
+                        "server": "AI Voice Agent v2.0"
+                    }
+                elif message_type == "status":
+                    response = {
+                        "type": "status_response",
+                        "status": "online",
+                        "connections": len(manager.active_connections),
+                        "services": {
+                            "tts": "available" if tts_service.is_available() else "unavailable",
+                            "stt": "available" if stt_service.is_available() else "unavailable",
+                            "llm": "available" if llm_service.is_available() else "unavailable"
+                        },
+                        "timestamp": datetime.now().isoformat(),
+                        "server": "AI Voice Agent v2.0"
+                    }
+                else:
+                    # Default echo behavior for unknown types
+                    response = {
+                        "type": "echo_response",
+                        "original": data,
+                        "echo": f"Server received: {data}",
+                        "timestamp": datetime.now().isoformat(),
+                        "server": "AI Voice Agent v2.0"
+                    }
+                
+                # Send JSON response
+                await manager.send_personal_message(json.dumps(response), websocket)
+                
+            except json.JSONDecodeError:
+                # Handle plain text messages
+                response = {
+                    "type": "text_response",
+                    "original": data,
+                    "echo": f"Server echo: {data}",
+                    "timestamp": datetime.now().isoformat(),
+                    "server": "AI Voice Agent v2.0"
+                }
+                await manager.send_personal_message(json.dumps(response), websocket)
+                
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info("WebSocket client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket)
 
 # =============================================================================
 # TTS ENDPOINTS
