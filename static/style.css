@@ -1,3 +1,52 @@
+/* Chat Container Improvements */
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 18px 18px 18px;
+    background: rgba(34,41,70,0.85);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(67,233,123,0.08);
+    margin-bottom: 12px;
+    scroll-behavior: smooth;
+}
+.message {
+    margin-bottom: 18px;
+    display: flex;
+    align-items: flex-start;
+}
+.ai-message .message-content {
+    background: linear-gradient(90deg, #43e97b 0%, #232946 100%);
+    color: #fff;
+    border-radius: 18px 18px 18px 4px;
+    padding: 16px 22px;
+    font-size: 1.08rem;
+    box-shadow: 0 2px 8px rgba(67,233,123,0.10);
+    max-width: 80%;
+    word-break: break-word;
+}
+.user-message .message-content {
+    background: linear-gradient(90deg, #232946 0%, #43e97b 100%);
+    color: #eaeaea;
+    border-radius: 18px 18px 4px 18px;
+    padding: 16px 22px;
+    font-size: 1.08rem;
+    box-shadow: 0 2px 8px rgba(67,233,123,0.10);
+    max-width: 80%;
+    margin-left: auto;
+    word-break: break-word;
+}
+.sticky-chat-header {
+    position: sticky;
+    top: 0;
+    background: rgba(34,41,70,0.95);
+    padding: 12px 0;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #43e97b;
+    z-index: 2;
+    border-bottom: 1px solid #232946;
+}
 /* Welcome Card */
 .welcome-card {
     max-width: 500px;
