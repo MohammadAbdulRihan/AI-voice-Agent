@@ -1,3 +1,44 @@
+/* Inline Murf Branding for Welcome Card */
+.murf-branding-inline {
+  display: inline-block;
+  background: linear-gradient(90deg, #43e97b 0%, #764ba2 100%);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1.05rem;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 12px rgba(67,233,123,0.18);
+  letter-spacing: 0.5px;
+  border: none;
+  transition: background 0.2s, color 0.2s;
+}
+.murf-branding-inline:hover {
+  background: linear-gradient(90deg, #764ba2 0%, #43e97b 100%);
+  color: #fff;
+}
+/* Murf Branding Badge */
+.murf-branding {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: rgba(67,233,123,0.15);
+  color: #764ba2;
+  padding: 8px 18px;
+  border-radius: 18px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 1rem;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(67,233,123,0.10);
+  transition: background 0.2s, color 0.2s;
+}
+.murf-branding:hover {
+  background: linear-gradient(90deg, #43e97b 0%, #764ba2 100%);
+  color: #fff;
+}
 /* =========================================================
    THEME TOKENS
    ========================================================= */
