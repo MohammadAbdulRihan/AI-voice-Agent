@@ -1,46 +1,27 @@
 
 # 🎙️ NovaVoice AI Voice Agent
-
+# 🎙️ SpeakSync AI Voice Agent
 A modern, production-ready voice-to-voice conversational AI agent with a sleek dark interface and robust architecture. Talk naturally with AI and get spoken responses in real-time.
 
 ## ✨ Features
 
-- **Voice Conversations** – Speak naturally and get AI responses in voice
-- **Modern UI** – Dark theme with glass-morphism design and smooth animations
-- **Real-time Processing** – Fast speech recognition and response generation
-- **Session Management** – Maintains conversation context
-- **Responsive Design** – Works on desktop, tablet, and mobile
-- **Type Safety** – Pydantic schemas for robust API validation
-- **Service Architecture** – Clean separation of concerns with dedicated service classes
-- **Production Ready** – Optimized code with proper error handling
 
 ## 🏗️ Architecture
 
 ### Service-Based Design
-- **STT Service** – AssemblyAI speech-to-text integration
-- **LLM Service** – Google Gemini AI processing
-- **TTS Service** – Murf AI text-to-speech generation
-- **Type Safety** – Pydantic models for request/response validation
 
 ### Tech Stack
-- **Backend**: FastAPI (Python) with Pydantic validation
-- **Frontend**: HTML5, CSS3, JavaScript (optimized)
-- **Speech-to-Text**: AssemblyAI
-- **AI Model**: Google Gemini
-- **Text-to-Speech**: Murf AI
 
 ## 🚀 Quick Setup
 
 ### Prerequisites
-- Python 3.8+
-- Modern web browser with microphone access
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YourUsername/novavoice-ai-voice-agent.git
-   cd novavoice-ai-voice-agent
+   git clone https://github.com/YourUsername/speaksync-ai-voice-agent.git
+   cd speaksync-ai-voice-agent
    ```
 
 2. **Install dependencies**
@@ -107,11 +88,6 @@ novavoice-ai-voice-agent/
 
 The application provides clean, type-safe API endpoints with Pydantic validation:
 
-- `POST /stt/transcribe` – Speech-to-text transcription
-- `POST /tts/echo` – Text-to-speech with transcription echo
-- `POST /llm/query` – LLM query processing with audio response
-- `POST /agent/chat/{session_id}` – Full voice agent conversation
-- `GET /` – Web interface
 
 All endpoints return structured responses with proper error handling.
 
@@ -147,16 +123,5 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## 🎯 Recent Updates
 
 ### Code Quality Improvements
-- ✅ **Pydantic Schemas** – Added type safety with comprehensive validation models
-- ✅ **Service Architecture** – Separated 3rd party integrations into dedicated service classes
-- ✅ **Code Cleanup** – Removed unused imports, variables, and redundant code
-- ✅ **Frontend Optimization** – Consolidated CSS, cleaned HTML structure, optimized JavaScript
-- ✅ **Error Handling** – Improved error handling across all services and endpoints
-- ✅ **Production Ready** – Optimized for deployment with proper configuration management
 
 ### Architecture Benefits
-- **Maintainability** – Clean separation between API logic and service integrations
-- **Testability** – Service classes can be easily mocked and tested
-- **Type Safety** – Pydantic models prevent runtime errors and improve API documentation
-- **Scalability** – Modular design allows easy addition of new services
-- **Reliability** – Comprehensive error handling and graceful degradation
