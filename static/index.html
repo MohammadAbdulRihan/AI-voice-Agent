@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head></head>
@@ -12,19 +12,19 @@
 
 <body>
     <div class="background-animated"></div>
-    <div class="welcome-card">
-        <h2>Welcome to NovaVoice!</h2>
-        <p>Your smart, friendly AI assistant for chat, search, and more.</p>
-    </div>
+
     <div class="app-container glass-card">
         <!-- Professional Header & Hero Section -->
         <div class="header gradient-header">
-            <div class="logo-title">
-                <h1 class="creative-title">NovaVoice</h1>
+            
+            <div class="welcome-card">
+                <h2>Welcome to NovaVoice!</h2>
+                <p>Your smart, friendly AI assistant for chat, search, and more.</p>
             </div>
             <p class="subtitle creative-sub">A playful, smart assistant for your daily adventures</p>
             <div class="hero-section">
-                <h2 class="hero-tagline creative-tagline">Speak. Search. Smile.<br><span class="highlight">Let your voice do the magic!</span></h2>
+                <h2 class="hero-tagline creative-tagline">Speak. Search. Smile.<br><span class="highlight">Let your
+                        voice do the magic!</span></h2>
                 <div class="features-list-row">
                     <div class="feature-pill"><span class="feature-icon">🎤</span> Voice & Text Chat</div>
                     <div class="feature-pill"><span class="feature-icon">🔍</span> Real-Time Web Search</div>
@@ -44,11 +44,11 @@
                 <h3>⚙️ API Configuration</h3>
                 <button class="close-settings" id="closeSettings">✕</button>
             </div>
-            
+
             <div class="settings-content">
                 <div class="settings-section">
                     <h4>🤖 AI Services</h4>
-                    
+
                     <div class="api-key-group">
                         <label for="geminiKey">Google Gemini API Key</label>
                         <div class="input-with-status">
@@ -70,7 +70,7 @@
 
                 <div class="settings-section">
                     <h4>🔍 Search & Information</h4>
-                    
+
                     <div class="api-key-group">
                         <label for="tavilyKey">Tavily API Key</label>
                         <div class="input-with-status">
@@ -83,7 +83,7 @@
 
                 <div class="settings-section">
                     <h4>🎵 Text-to-Speech (Optional)</h4>
-                    
+
                     <div class="api-key-group">
                         <label for="openaiKey">OpenAI API Key</label>
                         <div class="input-with-status">
@@ -186,7 +186,7 @@
         const textInput = document.getElementById('textInput');
         const sendButton = document.getElementById('sendButton');
         const toggleInputButton = document.getElementById('toggleInputButton');
-        
+
         // Settings elements
         const settingsButton = document.getElementById('settingsButton');
         const settingsSidebar = document.getElementById('settingsSidebar');
@@ -550,7 +550,7 @@
             const saved = localStorage.getItem('marvis_api_keys');
             if (saved) {
                 userApiKeys = JSON.parse(saved);
-                
+
                 // Populate input fields
                 document.getElementById('geminiKey').value = userApiKeys.gemini || '';
                 document.getElementById('assemblyaiKey').value = userApiKeys.assemblyai || '';
@@ -558,7 +558,7 @@
                 document.getElementById('openaiKey').value = userApiKeys.openai || '';
                 document.getElementById('elevenlabsKey').value = userApiKeys.elevenlabs || '';
                 document.getElementById('murfKey').value = userApiKeys.murf || '';
-                
+
                 updateKeyStatuses();
             }
         }
@@ -572,10 +572,10 @@
                 elevenlabs: document.getElementById('elevenlabsKey').value.trim(),
                 murf: document.getElementById('murfKey').value.trim()
             };
-            
+
             localStorage.setItem('marvis_api_keys', JSON.stringify(userApiKeys));
             updateKeyStatuses();
-            
+
             // Show success message
             updateStatus('API keys saved successfully!', 'connected');
             setTimeout(() => updateStatus('Ready', 'ready'), 2000);
@@ -585,7 +585,7 @@
             if (confirm('Are you sure you want to clear all API keys?')) {
                 localStorage.removeItem('marvis_api_keys');
                 userApiKeys = {};
-                
+
                 // Clear input fields
                 document.getElementById('geminiKey').value = '';
                 document.getElementById('assemblyaiKey').value = '';
@@ -593,7 +593,7 @@
                 document.getElementById('openaiKey').value = '';
                 document.getElementById('elevenlabsKey').value = '';
                 document.getElementById('murfKey').value = '';
-                
+
                 updateKeyStatuses();
                 updateStatus('API keys cleared', 'error');
             }
@@ -601,7 +601,7 @@
 
         function updateKeyStatuses() {
             const keys = ['gemini', 'assemblyai', 'tavily', 'openai', 'elevenlabs', 'murf'];
-            
+
             keys.forEach(key => {
                 const status = document.getElementById(`${key}Status`);
                 const hasKey = userApiKeys[key] && userApiKeys[key].length > 0;
@@ -618,7 +618,7 @@
 
         async function testApiConnection() {
             updateStatus('Testing API connections...', 'processing');
-            
+
             try {
                 const response = await fetch('/test-api-keys', {
                     method: 'POST',
@@ -627,15 +627,15 @@
                     },
                     body: JSON.stringify(userApiKeys)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     updateStatus('API connections successful!', 'connected');
                 } else {
                     updateStatus('Some API keys failed validation', 'error');
                 }
-                
+
                 // Update individual key statuses based on test results
                 Object.keys(result.results || {}).forEach(key => {
                     const status = document.getElementById(`${key}Status`);
@@ -643,7 +643,7 @@
                         status.textContent = result.results[key] ? '✅' : '❌';
                     }
                 });
-                
+
             } catch (error) {
                 updateStatus('Connection test failed', 'error');
                 console.error('API test error:', error);
@@ -661,7 +661,7 @@
                 websocket.onopen = () => {
                     isConnected = true;
                     updateStatus('Connected', 'connected');
-                    
+
                     // Send API keys to server
                     if (Object.keys(userApiKeys).length > 0) {
                         websocket.send(JSON.stringify({
@@ -707,7 +707,7 @@
     </script>
 </body>
 
-</html> -->
+</html>
 
 
 <!-- -------------------- -->

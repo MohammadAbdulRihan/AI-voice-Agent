@@ -4,26 +4,20 @@ MARVIS (Machine-based Assistant for Research, Voice, and Interactive Services) i
 
 ## Features
 
-- 🎤 **Voice Recognition**: Uses browser speech recognition for reliable voice input
-- 🤖 **Enhanced AI**: Intelligent assistant with web search capabilities
-- 🔍 **Web Search**: Real-time web search for current information
-- 🌤️ **Weather Updates**: Get current weather for any location
-- 📰 **Latest News**: Access breaking news and current events
-- 🧮 **Calculations**: Perform mathematical calculations
-- 🎵 **Text-to-Speech**: Multiple TTS options (OpenAI, ElevenLabs, Browser fallback)
-- 💬 **Chat History**: Remembers conversation context for natural dialogue
-- 🌊 **Real-time Streaming**: Live audio streaming and response generation
-- 📱 **Responsive Design**: Works on desktop and mobile devices
 
-## Quick Start
+## ✨ New & Improved Features
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- 🖥️ **Modern Homepage UI**: Beautiful, professional landing page with hero section and animated gradients
+- � **Glassmorphism & Gradient Effects**: Stylish glass cards, animated backgrounds, and feature pills for a premium look
+- 📋 **Feature Pills Row**: Highlights agent capabilities in a visually appealing way
+- 💬 **Sticky Chat Header**: Chat section with sticky header for context and status
+- 🗨️ **Improved Chat Bubbles**: Modern, animated chat bubbles for user and AI messages
+- 📱 **Fully Responsive Design**: Optimized for desktop and mobile, with adaptive layouts
+- ⚙️ **Settings Sidebar**: Slide-out sidebar for API key management and agent configuration
+- 🎨 **Custom Mascot & Branding**: SVG mascot and creative branding elements
 
-2. **Set up Environment Variables** (create `.env` file):
-   ```env
+- (All previous features retained)
+
    # Required for AI responses
    GEMINI_API_KEY=your_gemini_api_key_here
    
