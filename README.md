@@ -1,6 +1,6 @@
-# 🤖 MARVIS - AI Voice Assistant
+#  NovaVoice - AI Voice Assistant
 
-MARVIS (Machine-based Assistant for Research, Voice, and Interactive Services) is a professional conversational AI voice assistant with a clean, modern interface.
+NovaVoice is a professional conversational AI voice assistant with a clean, modern interface.
 
 ## Features
 
@@ -43,10 +43,10 @@ MARVIS (Machine-based Assistant for Research, Voice, and Interactive Services) i
 ## How to Use
 
 1. **Click the microphone button** to start voice input
-2. **Speak clearly** - MARVIS is listening!
+2. **Speak clearly** - NovaVoice is listening!
 3. **Or click the toggle button** to switch to text input
 4. **Get intelligent responses** with natural conversation flow
-5. **Continue the conversation** - MARVIS remembers your context!
+5. **Continue the conversation** - NovaVoice remembers your context!
 
 ## API Keys Setup
 
