@@ -1,92 +1,162 @@
-#  NovaVoice - AI Voice Assistant
 
-NovaVoice is a professional conversational AI voice assistant with a clean, modern interface.
+# 🎙️ NovaVoice AI Voice Agent
 
-## Features
+A modern, production-ready voice-to-voice conversational AI agent with a sleek dark interface and robust architecture. Talk naturally with AI and get spoken responses in real-time.
 
+## ✨ Features
 
-## ✨ New & Improved Features
+- **Voice Conversations** – Speak naturally and get AI responses in voice
+- **Modern UI** – Dark theme with glass-morphism design and smooth animations
+- **Real-time Processing** – Fast speech recognition and response generation
+- **Session Management** – Maintains conversation context
+- **Responsive Design** – Works on desktop, tablet, and mobile
+- **Type Safety** – Pydantic schemas for robust API validation
+- **Service Architecture** – Clean separation of concerns with dedicated service classes
+- **Production Ready** – Optimized code with proper error handling
 
-- 🖥️ **Modern Homepage UI**: Beautiful, professional landing page with hero section and animated gradients
-- � **Glassmorphism & Gradient Effects**: Stylish glass cards, animated backgrounds, and feature pills for a premium look
-- 📋 **Feature Pills Row**: Highlights agent capabilities in a visually appealing way
-- 💬 **Sticky Chat Header**: Chat section with sticky header for context and status
-- 🗨️ **Improved Chat Bubbles**: Modern, animated chat bubbles for user and AI messages
-- 📱 **Fully Responsive Design**: Optimized for desktop and mobile, with adaptive layouts
-- ⚙️ **Settings Sidebar**: Slide-out sidebar for API key management and agent configuration
-- 🎨 **Custom Mascot & Branding**: SVG mascot and creative branding elements
+## 🏗️ Architecture
 
-- (All previous features retained)
+### Service-Based Design
+- **STT Service** – AssemblyAI speech-to-text integration
+- **LLM Service** – Google Gemini AI processing
+- **TTS Service** – Murf AI text-to-speech generation
+- **Type Safety** – Pydantic models for request/response validation
 
-   # Required for AI responses
-   GEMINI_API_KEY=your_gemini_api_key_here
-   
-   # Optional TTS services (browser fallback available)
-   OPENAI_API_KEY=your_openai_key_here
-   ELEVENLABS_API_KEY=your_elevenlabs_key_here
-   MURF_API_KEY=your_murf_key_here
-   
-   # Optional (AssemblyAI has issues, browser speech works)
-   ASSEMBLYAI_API_KEY=your_assemblyai_key_here
-   ```
+### Tech Stack
+- **Backend**: FastAPI (Python) with Pydantic validation
+- **Frontend**: HTML5, CSS3, JavaScript (optimized)
+- **Speech-to-Text**: AssemblyAI
+- **AI Model**: Google Gemini
+- **Text-to-Speech**: Murf AI
 
-3. **Run the Application**:
+## 🚀 Quick Setup
+
+### Prerequisites
+- Python 3.8+
+- Modern web browser with microphone access
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   python start.py
-   # or
-   python main.py
+   git clone https://github.com/YourUsername/novavoice-ai-voice-agent.git
+   cd novavoice-ai-voice-agent
    ```
 
-4. **Open Your Browser**:
-   Navigate to `http://localhost:8000`
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## How to Use
+3. **Configure API keys**
 
-1. **Click the microphone button** to start voice input
-2. **Speak clearly** - NovaVoice is listening!
-3. **Or click the toggle button** to switch to text input
-4. **Get intelligent responses** with natural conversation flow
-5. **Continue the conversation** - NovaVoice remembers your context!
+   Copy the example environment file and add your API keys:
+   ```bash
+   cp .env.example .env
+   ```
 
-## API Keys Setup
+   Edit `.env` with your API keys:
+   ```env
+   # AssemblyAI Configuration (Speech-to-Text)
+   AssemblyAI_API_KEY=your_assemblyai_api_key_here
 
-### Required:
-- **Gemini API**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   # Google Gemini Configuration (Language Model)
+   GOOGLE_API_KEY=your_google_gemini_api_key_here
 
-### Optional (for better TTS):
-- **OpenAI API**: Get from [OpenAI Platform](https://platform.openai.com/api-keys)
-- **ElevenLabs API**: Get from [ElevenLabs](https://elevenlabs.io/)
+   # Murf AI Configuration (Text-to-Speech)
+   MURF_API_KEY=your_murf_api_key_here
+   ```
 
-## Technical Details
+4. **Run the application**
+   ```bash
+   uvicorn main:app --reload
+   ```
 
-- **Backend**: FastAPI with WebSocket streaming
-- **AI Model**: Google Gemini for pirate personality
-- **Speech Recognition**: Browser Web Speech API (reliable)
-- **TTS**: Multiple providers with browser fallback
-- **Frontend**: Vanilla JavaScript with modern UI
+5. **Open in browser**
+   ```
+   http://localhost:8000
+   ```
 
-## Troubleshooting
+## 🎮 Usage
 
-### Quick Fixes:
-- **Speech recognition errors**: Use the "⌨️ Type Message" button as fallback
-- **Network errors**: Use `http://localhost:8000` or HTTPS in production
-- **Browser issues**: Chrome/Edge work best for speech recognition
-- **No microphone**: Text input always available as backup
+1. Click the **microphone button** to start/stop recording
+2. Speak clearly into your microphone
+3. The AI will process your speech and respond with voice
+4. Continue the conversation naturally
 
-### Detailed Help:
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete solutions to common issues.
+## 📁 Project Structure
 
-### Common Issues:
-- **No speech detected**: Ensure microphone permissions are granted
-- **AI not responding**: Check Gemini API key in `.env` file  
-- **Audio not playing**: Browser TTS fallback should work on all devices
+```
+novavoice-ai-voice-agent/
+├── main.py              # FastAPI server with clean endpoint handlers
+├── schemas.py           # Pydantic models for type safety
+├── routes/              # Service layer architecture
+│   ├── audio.py         # AssemblyAI speech-to-text service
+│   ├── chat.py          # Google Gemini LLM service
+│   └── system.py        # Murf AI text-to-speech service
+├── static/
+│   ├── style.css        # Modern dark theme
+│   └── index.html       # Optimized voice interface
+├── uploads/             # Audio uploads
+├── .env                 # API configuration (create from .env.example)
+├── requirements.txt     # Python dependencies
+└── README.md            # Documentation
+```
 
-## Pirate Commands
+## 🔧 API Endpoints
 
-Try saying:
-- "Ahoy there, how are ye doing?"
-- "Tell me about the seven seas"
-- "What's the weather like on the high seas?"
-- "Sing me a sea shanty!"
+The application provides clean, type-safe API endpoints with Pydantic validation:
 
-Arrr! Set sail on the seas of conversation, matey! 🏴‍☠️⚓
+- `POST /stt/transcribe` – Speech-to-text transcription
+- `POST /tts/echo` – Text-to-speech with transcription echo
+- `POST /llm/query` – LLM query processing with audio response
+- `POST /agent/chat/{session_id}` – Full voice agent conversation
+- `GET /` – Web interface
+
+All endpoints return structured responses with proper error handling.
+
+## 🔑 API Keys Setup
+
+### AssemblyAI (Speech-to-Text)
+1. Sign up at [AssemblyAI](https://www.assemblyai.com/)
+2. Get your API key from the dashboard
+3. Add to `.env` as `AssemblyAI_API_KEY`
+
+### Google Gemini (Language Model)
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a project and generate an API key
+3. Add to `.env` as `GOOGLE_API_KEY`
+
+### Murf AI (Text-to-Speech)
+1. Register at [Murf AI](https://murf.ai/)
+2. Subscribe to get API access
+3. Add to `.env` as `MURF_API_KEY`
+
+## 🚀 Development
+
+**Local Development:**
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Production:**
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+## 🎯 Recent Updates
+
+### Code Quality Improvements
+- ✅ **Pydantic Schemas** – Added type safety with comprehensive validation models
+- ✅ **Service Architecture** – Separated 3rd party integrations into dedicated service classes
+- ✅ **Code Cleanup** – Removed unused imports, variables, and redundant code
+- ✅ **Frontend Optimization** – Consolidated CSS, cleaned HTML structure, optimized JavaScript
+- ✅ **Error Handling** – Improved error handling across all services and endpoints
+- ✅ **Production Ready** – Optimized for deployment with proper configuration management
+
+### Architecture Benefits
+- **Maintainability** – Clean separation between API logic and service integrations
+- **Testability** – Service classes can be easily mocked and tested
+- **Type Safety** – Pydantic models prevent runtime errors and improve API documentation
+- **Scalability** – Modular design allows easy addition of new services
+- **Reliability** – Comprehensive error handling and graceful degradation
